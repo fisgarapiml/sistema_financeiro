@@ -1,0 +1,16 @@
+# Arquivos de log que podem ser gerados durante o desenvolvimento
+*.log
+
+# Diretório do ambiente virtual (altere se o seu ambiente virtual tiver outro nome)
+venv/
+
+# Arquivos compilados Python
+*.pyc
+__pycache__/
+
+# Pastas específicas de editores ou IDEs (por exemplo, PyCharm)
+.idea/
+
+# Arquivos de configuração temporária ou sensíveis
+config.json
+secret.json
