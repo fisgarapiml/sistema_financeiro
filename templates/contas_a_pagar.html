@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Contas a Pagar — Grupo Fisgar</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --cor-principal: #00009F;
+      --cor-secundaria: #E6E9FF;
+      --cor-sucesso: #2ECC71;
+      --cor-alerta: #F39C12;
+      --cor-erro: #E74C3C;
+      --cor-neutro: #F5F7FA;
+      --cor-texto: #333;
+    }
+
+    body {
+      background-color: var(--cor-neutro);
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .container-custom {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 10px;
+    }
+
+    .header-bar {
+      background: linear-gradient(135deg, var(--cor-principal), #00007A);
+      padding: 10px 0;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      color: white;
+    }
+
+    .header-title {
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .filtro-total-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 40px 0 30px;
+    }
+
+    .filtro-box {
+      flex: 1;
+      min-width: 280px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .total-box {
+      width: 260px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .total-box h6 {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--cor-texto);
+    }
+
+    .total-box h4 {
+      font-weight: 700;
+      color: var(--cor-principal);
+    }
+
+    .table-responsive {
+      margin-top: 20px;
+    }
+
+    table {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    thead {
+      background-color: var(--cor-principal);
+      color: white;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      vertical-align: middle;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #eee;
+    }
+
+    tbody tr:hover {
+      background-color: var(--cor-secundaria);
+    }
+
+    .badge-status {
+      font-size: 0.8rem;
+      padding: 5px 10px;
+      border-radius: 20px;
+      color: white;
+    }
+
+    .badge-Aberto { background: var(--cor-alerta); }
+    .badge-Pago { background: var(--cor-sucesso); }
+    .badge-Vencido { background: var(--cor-erro); }
+
+    .btn-success {
+      background-color: var(--cor-principal) !important;
+      border: none;
+    }
+
+    .btn-success:hover {
+      background-color: #00007A !important;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Cabeçalho -->
+  <div class="header-bar">
+    <div class="container-custom">
+      <div class="header-title">Contas a Pagar</div>
+    </div>
+  </div>
+
+  <!-- Conteúdo -->
+  <div class="container-custom">
+
+    <!-- Filtros + Total -->
+    <div class="filtro-total-wrapper">
+      <div class="filtro-box">
+        <form method="GET" action="/">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <select name="status" class="form-select">
+                <option value="">Status</option>
+                {% for op in status_opcoes %}
+                  <option value="{{ op }}" {% if op == status_atual %}selected{% endif %}>{{ op }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <select name="categoria" class="form-select">
+                <option value="">Categoria</option>
+                {% for cat in categorias_opcoes %}
+                  <option value="{{ cat }}" {% if cat == categoria_atual %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <select name="fornecedor" class="form-select">
+                <option value="">Fornecedor</option>
+                {% for f in fornecedores_opcoes %}
+                  <option value="{{ f }}" {% if f == fornecedor_atual %}selected{% endif %}>{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-12">
+              <button type="submit" class="btn btn-success w-100 mt-2">🔎 Aplicar Filtros</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="total-box">
+        <h6>💰 Total Filtrado</h6>
+        <h4>R$ {{ "{:,.2f}".format(total).replace(",", "X").replace(".", ",").replace("X", ".") }}</h4>
+      </div>
+    </div>
+
+    <!-- Lista estilo ERP -->
+<div class="table-responsive">
+  <table class="table table-hover table-bordered">
+    <thead>
+      <tr>
+        <th>Fornecedor</th>
+        <th>Vencimento</th>
+        <th>Valor</th>
+        <th>Pago</th>
+        <th>Pendente</th>
+        <th>Status</th>
+        <th>Categoria</th>
+        <th>Tipo</th>
+        <th>Centro de Custo</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in dados %}
+<tr>
+  <td>{{ l[1] }}</td> <!-- Fornecedor -->
+  <td>{{ l[2] }}</td> <!-- Vencimento -->
+  <td>R$ {{ "%.2f"|format(l[3]|float) }}</td>
+  <td>R$ {{ "%.2f"|format(l[4]|float) }}</td>
+  <td>R$ {{ "%.2f"|format(l[5]|float) }}</td>
+  <td><span class="badge badge-status badge-{{ l[6] }}">{{ l[6] }}</span></td>
+  <td>{{ l[7] }}</td>
+  <td>{{ l[8] }}</td>
+  <td>{{ l[9] }}</td>
+  <td>
+    <a href="/editar/{{ l[0] }}" class="btn btn-sm btn-outline-primary">✏️</a>
+  </td>
+</tr>
+{% endfor %}
+
+    </tbody>
+  </table>
+</div> </div>
+
+</body>
+</html>

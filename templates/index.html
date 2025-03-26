@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Contas a Pagar</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <div class="topbar">
+        <h1>Contas a Pagar — Filtros Inteligentes</h1>
+    </div>
+
+    <div class="filtros">
+        <form method="POST">
+            <select name="status">
+                <option value="">Status</option>
+                {% for s in status_opcoes %}
+                    <option value="{{ s }}" {% if s == status_atual %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="categoria">
+                <option value="">Categoria</option>
+                {% for c in categoria_opcoes %}
+                    <option value="{{ c }}" {% if c == categoria_atual %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="fornecedor">
+                <option value="">Fornecedor</option>
+                {% for f in fornecedor_opcoes %}
+                    <option value="{{ f }}" {% if f == fornecedor_atual %}selected{% endif %}>{{ f }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">🔍 Aplicar Filtros</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="titulo">💰 Total Filtrado</div>
+        <div class="valor">R$ {{ '{:,.2f}'.format(total).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+    </div>
+
+</body>
+</html>
