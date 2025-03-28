@@ -67,6 +67,7 @@
 
     canvas {
       max-width: 100%;
+      max-height: 320px;
     }
   </style>
 </head>
@@ -84,42 +85,45 @@
     </form>
 
     <div class="row g-3 mb-4">
-      <div class="col-md-4">
-        <div class="card-indicador">
-          Previsto no Período
-          <div class="valor-indicador">R$ {{ total_previsto | round(2) | string | replace('.', ',') }}</div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card-indicador">
-          Pago no Período
-          <div class="valor-indicador">R$ {{ total_pago | round(2) | string | replace('.', ',') }}</div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card-indicador">
-          Saldo (Diferença)
-          <div class="valor-indicador">R$ {{ saldo | round(2) | string | replace('.', ',') }}</div>
-        </div>
+  <div class="col-md-4">
+    <div class="card-indicador">
+      Previsto no Período
+      <div class="valor-indicador">
+        R$ {{ "{:,.2f}".format(total_previsto).replace(",", "X").replace(".", ",").replace("X", ".") }}
       </div>
     </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-indicador">
+      Pago no Período
+      <div class="valor-indicador">
+        R$ {{ "{:,.2f}".format(total_pago).replace(",", "X").replace(".", ",").replace("X", ".") }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-indicador">
+      Saldo (Diferença)
+      <div class="valor-indicador">
+        R$ {{ "{:,.2f}".format(saldo).replace(",", "X").replace(".", ",").replace("X", ".") }}
+      </div>
+    </div>
+  </div>
+</div>
 
     <div class="bg-white p-4 rounded shadow-sm mb-4">
-      <h5 class="text-center mb-3">📊 Distribuição por Status
-      </h5>
+      <h5 class="text-center mb-3">📊 Distribuição por Status</h5>
       <canvas id="graficoStatus"></canvas>
     </div>
 
     <div class="bg-white p-4 rounded shadow-sm">
-      <h5 class="text-center mb-3">📄 Distribuição por Categoria
-      </h5>
+      <h5 class="text-center mb-3">📂 Distribuição por Categoria</h5>
       <canvas id="graficoCategoria"></canvas>
     </div>
   </div>
 
   <script>
-    const graficoStatus = document.getElementById("graficoStatus");
-    new Chart(graficoStatus, {
+    new Chart(document.getElementById("graficoStatus"), {
       type: "bar",
       data: {
         labels: {{ labels_status | safe }},
@@ -131,27 +135,33 @@
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: true } }
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
       }
     });
 
-    const graficoCategoria = document.getElementById("graficoCategoria");
-    new Chart(graficoCategoria, {
+    new Chart(document.getElementById("graficoCategoria"), {
       type: "doughnut",
       data: {
         labels: {{ labels_categoria | safe }},
         datasets: [{
           label: "Total (R$)",
           data: {{ valores_categoria | safe }},
-          backgroundColor: ["#8e44ad", "#f39c12", "#27ae60", "#e74c3c", "#3498db", "#2c3e50"]
+          backgroundColor: [
+            "#8e44ad", "#f39c12", "#27ae60", "#e74c3c", "#3498db", "#2c3e50", "#16a085", "#ff6f61"
+          ]
         }]
       },
       options: {
         responsive: true,
         plugins: {
-          legend: {
-            position: "bottom"
-          }
+          legend: { position: "bottom" }
         }
       }
     });
