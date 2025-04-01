@@ -169,14 +169,20 @@ def processar_dados(df):
         lambda x: "Fixo" if x == "Funcionários" or x == "Custo Fixo" else custo_fixo_variavel.get(x, "Variável")
     )
 
-    # ✅ Corrige valores com vírgula e transforma para ponto antes de salvar
+    # ✅ Corrige vírgulas para ponto nos valores financeiros
     for col in ['valor', 'valor_pendente', 'valor_pago']:
         if col in df.columns:
             df[col] = df[col].astype(str).str.replace(",", ".").str.strip()
 
+    # ✅ Garante que os valores na coluna 'valor' sejam sempre negativos
+    if 'valor' in df.columns:
+        df['valor'] = df['valor'].astype(float)
+        df['valor'] = df['valor'].apply(lambda x: -abs(x))  # transforma para negativo
+
     df.drop_duplicates(inplace=True)
     print("✅ Dados processados com sucesso.")
     return df
+
 
 # Garante que todas as colunas existam no banco
 def garantir_colunas_no_banco(df, banco, tabela):

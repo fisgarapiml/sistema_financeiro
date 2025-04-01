@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect
 import sqlite3
 from datetime import datetime, timedelta
+from contas_a_pagar import contas_a_pagar
 
 app = Flask(__name__)
 
@@ -132,7 +133,12 @@ def dashboard():
         valores_categoria=valores_categoria,
         dias_futuros_labels=dias_futuros_labels,
         dias_futuros_valores=dias_futuros_valores
+
     )
+@app.route("/contas-a-pagar")
+def rota_contas_a_pagar():
+    return contas_a_pagar()
+
 
 # 🚀 Executar o servidor
 if __name__ == "__main__":
