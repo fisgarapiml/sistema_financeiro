@@ -4,26 +4,17 @@ import plotly
 import plotly.graph_objs as go
 import json
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 def contas_a_pagar():
     conexao = sqlite3.connect("grupo_fisgar.db")
     cursor = conexao.cursor()
-    cursor.execute("""
-        SELECT vencimento, valor, valor_pago, status
-        FROM contas_a_pagar
-    """)
 
-    # 🗓️ Filtros de datas
+    # Datas de filtro
     hoje = datetime.today()
-    data_de = request.args.get("data_de")
-    data_ate = request.args.get("data_ate")
+    data_de = request.args.get("data_de") or hoje.replace(day=1).strftime("%Y-%m-%d")
+    data_ate = request.args.get("data_ate") or hoje.strftime("%Y-%m-%d")
 
-    if not data_de:
-        data_de = hoje.replace(day=1).strftime("%Y-%m-%d")
-    if not data_ate:
-        data_ate = hoje.strftime("%Y-%m-%d")
-
-    # 🔍 Buscar dados filtrados
     cursor.execute("""
         SELECT fornecedor, vencimento, valor, valor_pago, status, categorias, tipo, centro_de_custo, codigo
         FROM contas_a_pagar
@@ -32,37 +23,95 @@ def contas_a_pagar():
     """, (data_de, data_ate))
     registros = cursor.fetchall()
 
-    dados = []
-    total_previsto = 0
-    total_pago = 0
+    # Totais
+    total_previsto = total_pago = saldo = total_atraso = total_hoje = total_amanha = 0
+    hoje = datetime.now().date()
+    amanha = hoje + timedelta(days=1)
 
     for r in registros:
-        fornecedor, vencimento, valor, valor_pago, status, categoria, tipo, centro, codigo = r
-        valor = float(valor or 0)
-        valor_pago = float(valor_pago or 0)
-        pendente = valor + valor_pago  # valor é negativo
-        dados.append([fornecedor, vencimento, valor, valor_pago, pendente, status, categoria, tipo, centro, codigo])
-        total_previsto += valor
-        total_pago += valor_pago
+        try:
+            vencimento = datetime.strptime(r[1], "%d/%m/%Y").date()
+            valor = float(str(r[2]).replace(",", ".") or 0)
+            valor_pago = float(str(r[3]).replace(",", ".") or 0)
 
-    saldo = total_previsto + total_pago
+            total_previsto += valor
+            total_pago += valor_pago
+            saldo += valor_pago + valor
 
-    # 📌 Contas de hoje / atraso / amanhã
-    hoje_str = hoje.strftime("%d/%m/%Y")
-    amanha_str = (hoje + timedelta(days=1)).strftime("%d/%m/%Y")
+            if vencimento == hoje:
+                total_hoje += abs(valor)
+            if vencimento == amanha:
+                total_amanha += abs(valor)
+            if vencimento < hoje and valor_pago == 0:
+                total_atraso += abs(valor)
+        except Exception as e:
+            print("Erro ao processar linha:", e)
+            continue
 
-    cursor.execute("SELECT SUM(CAST(valor AS FLOAT)) FROM contas_a_pagar WHERE vencimento = ? AND status != 'Pago'", (hoje_str,))
-    total_hoje = cursor.fetchone()[0] or 0
+    # Gráfico de linhas (vazio por enquanto)
+    fig_linhas = go.Figure()
 
-    cursor.execute("""
-        SELECT SUM(CAST(valor AS FLOAT)) FROM contas_a_pagar 
-        WHERE date(substr(vencimento,7,4)||'-'||substr(vencimento,4,2)||'-'||substr(vencimento,1,2)) < ?
-        AND status != 'Pago'
-    """, (hoje.strftime("%Y-%m-%d"),))
-    total_atraso = cursor.fetchone()[0] or 0
+    # Gráfico por Categoria
+    dados_categoria = {}
+    for r in registros:
+        try:
+            categoria = r[5]
+            valor = float(str(r[2]).replace(",", ".") or 0)
+            if categoria:
+                dados_categoria[categoria] = dados_categoria.get(categoria, 0) + abs(valor)
+        except:
+            continue
+    fig_categoria = go.Figure()
+    fig_categoria.add_trace(go.Pie(labels=list(dados_categoria.keys()), values=list(dados_categoria.values())))
 
-    cursor.execute("SELECT SUM(CAST(valor AS FLOAT)) FROM contas_a_pagar WHERE vencimento = ? AND status != 'Pago'", (amanha_str,))
-    total_amanha = cursor.fetchone()[0] or 0
+    # Gráfico por Status
+    dados_status = {}
+    for r in registros:
+        try:
+            status = r[4]
+            valor = float(str(r[2]).replace(",", ".") or 0)
+            if status:
+                dados_status[status] = dados_status.get(status, 0) + abs(valor)
+        except:
+            continue
+    fig_status = go.Figure()
+    fig_status.add_trace(go.Pie(labels=list(dados_status.keys()), values=list(dados_status.values())))
+
+    # Gráfico por Dia (Barra)
+    dados_dia = defaultdict(float)
+    for r in registros:
+        try:
+            vencimento = r[1]
+            valor = float(str(r[2]).replace(",", ".") or 0)
+            if vencimento:
+                dados_dia[vencimento] += abs(valor)
+        except:
+            continue
+    fig_dia = go.Figure()
+    fig_dia.add_trace(go.Bar(x=list(dados_dia.keys()), y=list(dados_dia.values())))
+
+    # Lç por Categoria (para interação)
+    lancamentos_por_categoria = {}
+    for r in registros:
+        try:
+            categoria = r[5]
+            valor = float(str(r[2]).replace(",", ".") or 0)
+            if categoria not in lancamentos_por_categoria:
+                lancamentos_por_categoria[categoria] = []
+            lancamentos_por_categoria[categoria].append({
+                "fornecedor": r[0],
+                "vencimento": r[1],
+                "valor": f"R$ {abs(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                "status": r[4]
+            })
+        except:
+            continue
+
+    # Converte gráficos
+    grafico_linhas_json = json.dumps(fig_linhas, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_categoria_json = json.dumps(fig_categoria, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_status_json = json.dumps(fig_status, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_dia_json = json.dumps(fig_dia, cls=plotly.utils.PlotlyJSONEncoder)
 
     totais = {
         "previsto": f"{total_previsto:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
@@ -70,81 +119,9 @@ def contas_a_pagar():
         "saldo": f"{saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
         "atraso": f"{total_atraso:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
         "hoje": f"{total_hoje:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-        "amanha": total_amanha
+        "amanha": f"{total_amanha:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     }
 
-    # 📊 Gráfico por Status
-    cursor.execute("""
-        SELECT status, SUM(CAST(valor AS FLOAT)) 
-        FROM contas_a_pagar 
-        WHERE date(substr(vencimento,7,4)||'-'||substr(vencimento,4,2)||'-'||substr(vencimento,1,2)) 
-        BETWEEN ? AND ?
-        GROUP BY status
-    """, (data_de, data_ate))
-    status_dados = cursor.fetchall()
-    fig_status = go.Figure([go.Bar(x=[r[0] for r in status_dados], y=[r[1] for r in status_dados])])
-    grafico_status = json.dumps(fig_status, cls=plotly.utils.PlotlyJSONEncoder)
-
-    # 📊 Gráfico por Categoria
-    cursor.execute("""
-        SELECT categorias, SUM(CAST(valor AS FLOAT)) 
-        FROM contas_a_pagar 
-        WHERE date(substr(vencimento,7,4)||'-'||substr(vencimento,4,2)||'-'||substr(vencimento,1,2)) 
-        BETWEEN ? AND ?
-        GROUP BY categorias
-    """, (data_de, data_ate))
-    categoria_dados = cursor.fetchall()
-    fig_categoria = go.Figure([go.Pie(labels=[r[0] for r in categoria_dados], values=[r[1] for r in categoria_dados])])
-    grafico_categoria = json.dumps(fig_categoria, cls=plotly.utils.PlotlyJSONEncoder)
-
-    # 📈 Gráfico Contas por Dia
-    cursor.execute("""
-        SELECT vencimento, SUM(CAST(valor AS FLOAT)) 
-        FROM contas_a_pagar 
-        WHERE date(substr(vencimento,7,4)||'-'||substr(vencimento,4,2)||'-'||substr(vencimento,1,2)) 
-        BETWEEN ? AND ?
-        GROUP BY vencimento
-    """, (data_de, data_ate))
-    dia_dados = cursor.fetchall()
-    fig_dia = go.Figure([go.Scatter(x=[r[0] for r in dia_dados], y=[r[1] for r in dia_dados], mode="lines+markers")])
-    grafico_dia = json.dumps(fig_dia, cls=plotly.utils.PlotlyJSONEncoder)
-
-    conexao.close()
-
-    graficos = {
-        "status": grafico_status,
-        "categoria": grafico_categoria,
-        "dia": grafico_dia
-    }
-
-    # Criação dos gráficos
-    fig_linhas = go.Figure()
-    # ... (código do gráfico de linhas)
-    # Agrupar valores por categoria
-    dados_categoria = {}
-    for r in registros:
-        print("Total de colunas retornadas:", len(r))
-        valor = r[1]  # índice da coluna 'valor'
-        try:
-            valor = float(str(valor).replace(",", "."))
-        except:
-            valor = 0
-        if categoria in dados_categoria:
-            dados_categoria[categoria] += valor
-        else:
-            dados_categoria[categoria] = valor
-
-    categorias = list(dados_categoria.keys())
-    valores_categoria = list(abs(v) for v in dados_categoria.values())
-
-    fig_categoria = go.Figure()
-    fig_categoria.add_trace(go.Pie(labels=categorias, values=valores_categoria))
-
-    # Converte os gráficos em JSON para o template
-    grafico_linhas_json = json.dumps(fig_linhas, cls=plotly.utils.PlotlyJSONEncoder)
-    grafico_categoria_json = json.dumps(fig_categoria, cls=plotly.utils.PlotlyJSONEncoder)
-
-    # Envio dos dados pro HTML
     return render_template("contas_a_pagar.html",
                            total_previsto=total_previsto,
                            total_pago=total_pago,
@@ -154,8 +131,8 @@ def contas_a_pagar():
                            data_de=data_de,
                            data_ate=data_ate,
                            grafico_linhas=grafico_linhas_json,
-                           grafico_categoria=grafico_categoria_json)
-
-
-
-
+                           grafico_categoria=grafico_categoria_json,
+                           grafico_status=grafico_status_json,
+                           grafico_dia=grafico_dia_json,
+                           totais=totais,
+                           lancamentos_categoria=lancamentos_por_categoria)

@@ -78,6 +78,13 @@
       </div>
     </div>
   </div>
+  <!-- Modal para exibir detalhes -->
+<div id="modalCategoria" class="modal" style="display:none; position: fixed; top: 10%; left: 10%; width: 80%; height: 70%; background: white; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.4); overflow-y: auto; z-index: 9999; padding: 20px;">
+  <h2 id="tituloModal" style="margin-top: 0;"></h2>
+  <button onclick="fecharModal()" style="float:right; margin-top:-40px; font-size:20px;">&times;</button>
+  <ul id="listaLancamentos"></ul>
+</div>
+
 
   <div class="row mt-4">
     <div class="col">
@@ -130,8 +137,47 @@
 <!-- PLOTLY CDN + GRÁFICOS -->
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-  Plotly.newPlot('grafico_status', {{ graficos.status | safe }}, {title: 'Total por Status'}, {responsive: true});
-  Plotly.newPlot('grafico_categoria', {{ graficos.categoria | safe }}, {title: 'Distribuição por Categoria'}, {responsive: true});
-  Plotly.newPlot('grafico_dia', {{ graficos.dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
+  Plotly.newPlot('grafico_status', {{ grafico_status | safe }}, {title: 'Total por Status'}, {responsive: true});
+  Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
+  Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
 </script>
+<!-- PLOTLY CDN + GRÁFICOS -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+  Plotly.newPlot('grafico_status', {{ grafico_status | safe }}, {title: 'Total por Status'}, {responsive: true});
+  Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
+  Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
+
+  // 🟡 INTERAÇÃO: Ao clicar em uma fatia do gráfico de categoria
+  document.getElementById('grafico_categoria').on('plotly_click', function(data) {
+    var categoria = data.points[0].label;
+    var lancamentos = {{ lancamentos_categoria | tojson }};
+    var lista = document.getElementById('listaLancamentos');
+    var titulo = document.getElementById('tituloModal');
+    lista.innerHTML = "";
+    titulo.innerText = "Lançamentos - Categoria: " + categoria;
+
+    if (lancamentos[categoria]) {
+      lancamentos[categoria].forEach(function(item) {
+  var li = document.createElement("li");
+  li.innerHTML = `
+    <strong>Fornecedor:</strong> ${item.fornecedor} |
+    <strong>Vencimento:</strong> ${item.vencimento} |
+    <strong>Valor:</strong> ${item.valor}<br>
+    <strong>Status:</strong> ${item.status}
+  `;
+  li.style.marginBottom = "10px";
+  lista.appendChild(li);
+});
+
+      document.getElementById('modalCategoria').style.display = 'block';
+    }
+  });
+
+  // 🔴 Função para fechar o modal
+  function fecharModal() {
+    document.getElementById('modalCategoria').style.display = 'none';
+  }
+</script>
+
 {% endblock %}

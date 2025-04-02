@@ -1,226 +1,244 @@
-import pandas as pd
+from flask import render_template, request
 import sqlite3
-import re
+import plotly
+import plotly.graph_objs as go
+import json
+from datetime import datetime, timedelta
 
-# Mapeamento de Plano de Contas para Categorias
-mapeamento_categorias = {
-    "Café da Manhã": "Alimentação",
-    "Reembolsos": "Custo de Vendas",
-    "Procuradoria PGFN": "Impostos",
-    "Inmetro 40x25": "Insumos",
-    "DAS de Parcelamento": "Dívidas Parceladas",
-    "Padrão": "Simples Nacional",
-    "Sistema Integrador": "Software",
-    "Point Ships (Pipoca)": "Fornecedores",
-    "Kikakau (Bolibol)": "Fornecedores",
-    "Billispel": "Fornecedores",
-    "Aluguel": "Fixo",
-    "Fatura": "Cartões",
-    "Jhan": "Fornecedores",
-    "vale transporte": "Funcionários",
-    "salário": "Funcionários",
-    "bonificação": "Funcionários",
-    "fgts": "Funcionários",
-    "Gabriel": "Funcionários",
-    "Lara Peçanha": "Funcionários",
-    "Jtoys": "Fornecedores",
-    "Miniplay": "Fornecedores",
-    "Marsil Atacadista": "Fornecedores",
-    "Manos Doces": "Fornecedores",
-    "Point Chips": "Fornecedores",
-    "Nucita": "Fornecedores",
-    "ALFA FULGA COMERCIIO": "Fornecedores",
-    "Contabilidade": "Custo Fixo",
-    "Altamiris Goes": "Custo Fixo"
-}
+def contas_a_pagar():
+    conexao = sqlite3.connect("grupo_fisgar.db")
+    cursor = conexao.cursor()
+    cursor.execute("""
+        SELECT vencimento, valor, valor_pago, status
+        FROM contas_a_pagar
+    """)
 
-# Mapeamento de Nome Razão Social para Categorias
-mapeamento_nome_razao_social = {
-    "Edilson": "Funcionários",
-    "Anderson": "Funcionários",
-    "Simone": "Funcionários",
-    "Suelen Produção": "Funcionários",
-    "Sávio": "Funcionários",
-    "Lara Peçanha": "Funcionários",
-    "Gabriel Arthur": "Funcionários",
-    "Altamiris Goes": "Funcionários",
-    "J TOYS BRINQUEDO LEGAL LTDA": "Fornecedores",
-    "Rio de Ondas Restaurante": "Fornecedores",
-    "Mercado Haquiza - Café": "Fornecedores",
-    "Mini Play Industria de Comercio de Plasticos LTDA": "Fornecedores",
-    "LIVRARIA FONTES DE CONHECIMENTO LTDA": "Fornecedores",
-    "ALFA FULGA COMERCIO (Oliveira Embalagens)": "Fornecedores",
-    "Mano's Doces": "Fornecedores",
-    "WA Transportes - Flex Shopee": "Fornecedores",
-    "Embalagem para Envios (Caixas)": "Fornecedores",
-    "R. L. PINHEIRO & CIA LTDA - Pipoca": "Fornecedores",
-    "Restaurante": "Fornecedores",
-    "EBAZAR.COM.BR LTDA (Mercado Livre)": "Fornecedores",
-    "ENVOS Lalamove": "Fornecedores",
-    "FGTS": "Impostos",
-    "Simples Nacional": "Impostos",
-    "Simples Nacional Fisgar Brinquedos": "Impostos",
-    "Simples Nacional Fisgar Pesca": "Impostos",
-    "Simples Nacional Comercial Mota": "Impostos",
-    "Imposto Prefeitura": "Impostos",
-    "LF CONSULTORIA SOLUÇÕES E DESENVOLVIMENTO - IdWorks": "Software",
-    "Conta Vivo Plano Mensal (Internet/Telefone)": "Água/Luz/Telefone",
-    "Energia": "Água/Luz/Telefone",
-    "Água": "Água/Luz/Telefone",
-    "VALENT'S DESCARTAVEIS LTDA": "Fornecedores",
-    "Simples Nacional Fisgar Camping": "Impostos",
-    "Reembolso": "Custo de Vendas",
-    "Prolabores": "Funcionários",
-    "Parcelamento de Simples": "Impostos",
-    "MAGALU/ACORDO": "Dívidas Parceladas",
-    "LIMPA NOME": "Outros",
-    "LF CONSULTORIA SOLUCOES E DESENVOLVIMENTO - IdWorks": "Software",
-    "Junior": "Funcionários",
-    "IGOR": "Funcionários",
-    "Gabriel": "Funcionários",
-    "Frete de Fornecedor": "Fornecedores",
-    "Fornecedores": "Fornecedores",
-    "Envios Lalamove": "Fornecedores",
-    "Empresa": "Outros",
-    "Elismar Mota": "Funcionários",
-    "EDS -Mercado Livre /Mercado Pago": "Fornecedores",
-    "EBAZAR.COM.BR LTDA": "Fornecedores",
-    "Conta Vivo Plano Mensal": "Água/Luz/Telefone",
-    "Bianca Balieiro Silva": "Funcionários",
-    "Banco Santander": "Outros",
-    "Banco Caixa": "Outros",
-    "BANCO BRADESCO S.A.": "Outros",
-    "Asonet": "Fornecedores",
-    "Alarme": "Outros"
-}
+    # 🗓️ Filtros de datas
+    hoje = datetime.today()
+    data_de = request.args.get("data_de")
+    data_ate = request.args.get("data_ate")
 
-# Mapeamento de Plano de Contas para Custo Fixo/Variável
-custo_fixo_variavel = {
-    "salário": "Fixo",
-    "advocacia": "Fixo",
-    "vale transporte": "Fixo",
-    "água": "Fixo",
-    "energia": "Fixo",
-    "telefone": "Fixo",
-    "vale refeição": "Fixo",
-    "fgts": "Fixo",
-    "acordo/empréstimo": "Fixo",
-    "contabilidade": "Fixo",
-    "das de parcelamento": "Fixo",
-    "aluguel": "Fixo",
-    "impostos": "Variável",
-    "insumos": "Variável",
-    "custo de vendas": "Variável",
-    "software": "Fixo",
-    "fornecedores": "Variável",
-    "cartões": "Variável",
-    "Altamiris Goes": "Fixo",
-    "Funcionários": "Fixo",
-    "Dívidas Parceladas": "Fixo",
-    "Água/Luz/Telefone": "Fixo",
-    "Outros": "Variável"
-}
+    if not data_de:
+        data_de = hoje.replace(day=1).strftime("%Y-%m-%d")
+    if not data_ate:
+        data_ate = hoje.strftime("%Y-%m-%d")
 
-# Correção de nomes de colunas da planilha
-mapeamento_colunas = {
-    "r__valor": "valor",
-    "r__pendente": "valor_pendente",
-    "r__pago": "valor_pago",
-    "coment_rios": "comentario",
-    "c_digo": "codigo_externo",
-    "n__documento": "documento",
-    "data_compet_ncia": "data_competencia"
-}
+    # 🔍 Buscar dados filtrados
+    cursor.execute("""
+        SELECT fornecedor, vencimento, valor, valor_pago, status, categorias, tipo, centro_de_custo, codigo
+        FROM contas_a_pagar
+        WHERE date(substr(vencimento, 7, 4) || '-' || substr(vencimento, 4, 2) || '-' || substr(vencimento, 1, 2))
+        BETWEEN ? AND ?
+    """, (data_de, data_ate))
+    registros = cursor.fetchall()
 
-# Normaliza nomes de colunas
-def normalizar_nome_coluna(nome):
-    return re.sub(r'[^a-zA-Z0-9_]', '_', nome)
 
-# Carrega planilha Google
-def carregar_planilha_google_sheets(sheet_id, aba):
-    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={aba}"
-    try:
-        df = pd.read_csv(url)
-        print("✅ Planilha carregada com sucesso do Google Sheets.")
-        return df
-    except Exception as e:
-        print(f"❌ Erro ao carregar a planilha: {e}")
-        return None
+    # Inicializa os totais
+    total_previsto = 0
+    total_pago = 0
+    saldo = 0
+    total_atraso = 0
+    total_hoje = 0
+    total_amanha = 0
 
-# Processa e estrutura os dados
-def processar_dados(df):
-    df.columns = [normalizar_nome_coluna(c.lower().strip()) for c in df.columns]
-    df.rename(columns=mapeamento_colunas, inplace=True)
+    hoje = datetime.now().date()
+    amanha = hoje + timedelta(days=1)
 
-    if 'codigo' not in df.columns:
-        df['codigo'] = range(1, len(df) + 1)
+    for r in registros:
+        try:
+            vencimento_str = r[1]  # vencimento
+            valor = float(str(r[2]).replace(",", ".") or 0)
+            valor_pago = float(str(r[3]).replace(",", ".") or 0)
 
-    if 'plano_de_contas' not in df.columns:
-        df['plano_de_contas'] = "Outros"
+            vencimento = datetime.strptime(vencimento_str, "%d/%m/%Y").date()
 
-    df['categorias'] = df['plano_de_contas'].map(mapeamento_categorias).fillna("Outros")
+            total_previsto += valor
+            total_pago += valor_pago
+            saldo += valor_pago + valor  # valor é negativo
 
-    for col in df.columns:
-        if "nome___raz_o_social" in col:
-            df['categorias'] = df[col].map(mapeamento_nome_razao_social).fillna(df['categorias'])
-            df.rename(columns={col: "fornecedor"}, inplace=True)
+            if vencimento == hoje:
+                total_hoje += abs(valor)
 
-    df['tipo_custo'] = df['categorias'].apply(
-        lambda x: "Fixo" if x == "Funcionários" or x == "Custo Fixo" else custo_fixo_variavel.get(x, "Variável")
-    )
+            if vencimento == amanha:
+                total_amanha += abs(valor)
 
-    # ✅ Corrige valores com vírgula e transforma para ponto antes de salvar
-    for col in ['valor', 'valor_pendente', 'valor_pago']:
-        if col in df.columns:
-            df[col] = df[col].astype(str).str.replace(",", ".").str.strip()
+            if vencimento < hoje and valor_pago == 0:
+                total_atraso += abs(valor)
 
-    df.drop_duplicates(inplace=True)
-    print("✅ Dados processados com sucesso.")
-    return df
+        except Exception as e:
+            print("Erro ao processar linha:", e)
+            continue
+            # Prepara os lançamentos organizados por categoria
+            lancamentos_por_categoria = {}
+            for r in registros:
+                try:
+                    fornecedor = r[0]
+                    vencimento = r[1]
+                    valor = float(str(r[2]).replace(",", ".") or 0)
+                    status = r[4]
+                    categoria = r[5]
 
-# Garante que todas as colunas existam no banco
-def garantir_colunas_no_banco(df, banco, tabela):
-    conn = sqlite3.connect(banco)
-    cursor = conn.cursor()
-    cursor.execute(f"PRAGMA table_info({tabela})")
-    colunas_existentes = [info[1] for info in cursor.fetchall()]
-    for coluna in df.columns:
-        if coluna not in colunas_existentes:
-            cursor.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} TEXT")
-            print(f"✅ Coluna adicionada: {coluna}")
-    conn.commit()
-    conn.close()
+                    if categoria not in lancamentos_por_categoria:
+                        lancamentos_por_categoria[categoria] = []
 
-# Insere ou atualiza os dados
-def importar_para_sqlite(df, banco_dados):
-    conn = sqlite3.connect(banco_dados)
-    cursor = conn.cursor()
+                    lancamentos_por_categoria[categoria].append({
+                        "fornecedor": fornecedor,
+                        "vencimento": vencimento,
+                        "valor": f"R$ {abs(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                        "status": status
+                    })
+                except:
+                    continue
 
-    colunas_insert = ", ".join([f'"{col}"' for col in df.columns])
-    placeholders = ", ".join(["?" for _ in df.columns])
+    # Gráfico de linhas (você pode adicionar aqui sua lógica)
+    fig_linhas = go.Figure()
 
-    for _, row in df.iterrows():
-        cursor.execute(f'''
-            INSERT INTO contas_a_pagar ({colunas_insert}) VALUES ({placeholders})
-            ON CONFLICT(codigo) DO UPDATE SET
-            {", ".join([f'{col} = EXCLUDED.{col}' for col in df.columns if col != "codigo"])}
-        ''', tuple(row))
+    # Gráfico de Categorias
+    dados_categoria = {}
+    for r in registros:
+        try:
+            categoria = r[7]  # índice da coluna 'categorias'
+            valor = float(str(r[2]).replace(",", ".") or 0)
+            if categoria:
+                dados_categoria[categoria] = dados_categoria.get(categoria, 0) + abs(valor)
+        except:
+            continue
 
-    conn.commit()
-    conn.close()
-    print("✅ Dados importados com sucesso no banco SQLite.")
+    categorias = list(dados_categoria.keys())
+    valores_categoria = list(dados_categoria.values())
 
-# Execução principal
-if __name__ == "__main__":
-    sheet_id = "1zj7fuvta2T55G0-cPnWthEfrVnqaui9u2EJ2cBJp64M"
-    sheet_name = "financeiro"
-    df = carregar_planilha_google_sheets(sheet_id, sheet_name)
+    fig_categoria = go.Figure()
+    fig_categoria.add_trace(go.Pie(labels=categorias, values=valores_categoria))
 
-    if df is not None:
-        df_processado = processar_dados(df)
-        if df_processado is not None:
-            print("\n🧪 Exemplo de dados prontos:")
-            print(df_processado[['fornecedor', 'categorias', 'tipo_custo']].head())
+    # Gráfico de Status
+    dados_status = {}
+    for r in registros:
+        try:
+            status = r[6]  # índice da coluna 'status'
+            valor = float(str(r[2]).replace(",", ".") or 0)  # índice da coluna 'valor'
+            if status:
+                dados_status[status] = dados_status.get(status, 0) + abs(valor)
+        except:
+            continue
 
-            garantir_colunas_no_banco(df_processado, "grupo_fisgar.db", "contas_a_pagar")
-            importar_para_sqlite(df_processado, "grupo_fisgar.db")
+    fig_status = go.Figure()
+    fig_status.add_trace(go.Pie(
+        labels=list(dados_status.keys()),
+        values=list(dados_status.values())
+    ))
+
+    # Converte os gráficos para JSON
+    grafico_linhas_json = json.dumps(fig_linhas, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_categoria_json = json.dumps(fig_categoria, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_status_json = json.dumps(fig_status, cls=plotly.utils.PlotlyJSONEncoder)
+
+    # Totais formatados
+    totais = {
+        "previsto": f"{total_previsto:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "pago": f"{total_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "saldo": f"{saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "atraso": f"{total_atraso:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "hoje": f"{total_hoje:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "amanha": f"{total_amanha:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    }
+
+    # Gráfico por Dia (agrupa por vencimento)
+    from collections import defaultdict
+    dados_dia = defaultdict(float)
+    for r in registros:
+        try:
+            vencimento = r[0]  # índice da coluna vencimento
+            valor = float(str(r[1]).replace(",", ".") or 0)  # índice da coluna valor
+            if vencimento:
+                dados_dia[vencimento] += abs(valor)
+        except:
+            continue
+
+    dias = sorted(dados_dia.keys())
+    valores_por_dia = [dados_dia[d] for d in dias]
+
+    fig_dia = go.Figure()
+    fig_dia.add_trace(go.Bar(x=dias, y=valores_por_dia))
+
+    # Converte os gráficos para JSON
+    grafico_linhas_json = json.dumps(fig_linhas, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_categoria_json = json.dumps(fig_categoria, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_status_json = json.dumps(fig_status, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_dia_json = json.dumps(fig_dia, cls=plotly.utils.PlotlyJSONEncoder)
+
+    # Totais formatados
+    totais = {
+        "previsto": f"{total_previsto:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "pago": f"{total_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "saldo": f"{saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "atraso": f"{total_atraso:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "hoje": f"{total_hoje:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "amanha": f"{total_amanha:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    }
+    print("Colunas do primeiro registro:", registros[0])
+    print("Total de colunas:", len(registros[0]))
+
+    # Gráfico de Status (com segurança e sem erro)
+    dados_status = {}
+    for r in registros:
+        try:
+            status = r[4]  # índice da coluna 'status'
+            valor = float(str(r[2]).replace(",", ".") or 0)  # índice da coluna 'valor'
+            if status:
+                dados_status[status] = dados_status.get(status, 0) + abs(valor)
+        except:
+            continue
+
+    fig_status = go.Figure()
+    fig_status.add_trace(go.Pie(
+        labels=list(dados_status.keys()),
+        values=list(dados_status.values())
+    ))
+    grafico_status_json = json.dumps(fig_status, cls=plotly.utils.PlotlyJSONEncoder)
+    # 🔍 Cria um resumo dos lançamentos por categoria
+    lancamentos_por_categoria = {}
+    for r in registros:
+        try:
+            categoria = r[5]  # índice da coluna 'categorias'
+            valor = float(str(r[2]).replace(",", ".") or 0)
+            if categoria not in lancamentos_por_categoria:
+                lancamentos_por_categoria[categoria] = []
+            lancamentos_por_categoria[categoria].append({
+                "fornecedor": r[0],
+                "vencimento": r[1],
+                "valor": valor,
+                "status": r[4]
+            })
+        except:
+            continue
+
+    # Envia pro HTML
+
+    # Envio dos dados pro template
+    return render_template("contas_a_pagar.html",
+                           total_previsto=total_previsto,
+                           total_pago=total_pago,
+                           saldo=saldo,
+                           total_atraso=total_atraso,
+                           registros=registros,
+                           data_de=data_de,
+                           data_ate=data_ate,
+                           grafico_linhas=grafico_linhas_json,
+                           grafico_categoria=grafico_categoria_json,
+                           grafico_status=grafico_status_json,
+                           grafico_dia=grafico_dia_json,
+                           totais=totais,  # ✅ necessário para os cards
+                           lancamentos_categoria=lancamentos_por_categoria  # ✅ para interatividade futura
+                           )
+
+
+
+
+
+
+
+
+
+
+
+
