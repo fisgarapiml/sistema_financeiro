@@ -179,5 +179,63 @@
     document.getElementById('modalCategoria').style.display = 'none';
   }
 </script>
+<!-- MODAL FUTURISTA COM LANÇAMENTOS POR CATEGORIA -->
+<div id="modalCategoria" class="modal" style="display:none; position:fixed; top:10%; left:10%; width:80%; height:70%; background:white; border-radius:16px; box-shadow:0 0 25px rgba(0,0,0,0.5); overflow-y:auto; z-index:9999; padding:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <h4 id="tituloModal" style="margin:0; font-weight:600; font-size:20px;">Detalhes</h4>
+    <button onclick="fecharModal()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+  </div>
+  <div id="listaLancamentos" style="display:flex; flex-direction:column; gap:10px;"></div>
+</div>
+
+<!-- SCRIPT DE INTERAÇÃO NO GRÁFICO DE CATEGORIA -->
+<script>
+  Plotly.newPlot('grafico_status', {{ grafico_status | safe }}, {title: 'Total por Status'}, {responsive: true});
+  Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
+  Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
+
+  <script>
+  document.getElementById('grafico_categoria').on('plotly_click', function(data) {
+    var categoria = data.points[0].label;
+    var lancamentos = {{ lancamentos_categoria | tojson }};
+    var lista = document.getElementById('listaLancamentos');
+    var titulo = document.getElementById('tituloModal');
+    lista.innerHTML = "";
+    titulo.innerText = "Lançamentos - Categoria: " + categoria;
+
+    if (lancamentos[categoria]) {
+      lancamentos[categoria].forEach(function(item) {
+        var card = document.createElement("div");
+        card.style.padding = "10px";
+        card.style.marginBottom = "10px";
+        card.style.border = "1px solid #ddd";
+        card.style.borderRadius = "8px";
+        card.style.backgroundColor = "#f8f9fa";
+
+        card.innerHTML = `
+          <div style="display:flex; align-items:flex-start; gap:12px;">
+            <span style="font-size:22px; margin-top:4px;">🔑</span>
+            <div style="flex:1;">
+              <div style="font-weight:600;">${item.fornecedor}</div>
+              <div style="font-size:13px;">Venc: <strong>${item.vencimento}</strong></div>
+              <div style="font-size:13px;">Status: ${item.status === 'Pago' ? '<span style="color:green;">✔️ Pago</span>' : '<span style="color:red;">🔴 ' + item.status + '</span>'}</div>
+              <div style="font-size:13px;">Centro de Custo: <strong>${item.centro}</strong></div>
+              <div style="font-size:13px;">Tipo: <strong>${item.tipo}</strong></div>
+            </div>
+            <div style="font-weight:bold; color:#3c3c3c;">R$ ${item.valor}</div>
+          </div>
+        `;
+        lista.appendChild(card);
+      });
+      document.getElementById('modalCategoria').style.display = 'block';
+    }
+  });
+
+  function fecharModal() {
+    document.getElementById('modalCategoria').style.display = 'none';
+  }
+</script>
+
+
 
 {% endblock %}

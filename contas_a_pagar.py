@@ -101,9 +101,12 @@ def contas_a_pagar():
             lancamentos_por_categoria[categoria].append({
                 "fornecedor": r[0],
                 "vencimento": r[1],
-                "valor": f"R$ {abs(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                "status": r[4]
+                "valor": f"{abs(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                "status": r[4],
+                "tipo": r[6],
+                "centro": r[7]
             })
+
         except:
             continue
 
