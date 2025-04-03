@@ -7,8 +7,45 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 def contas_a_pagar():
-    conexao = sqlite3.connect("grupo_fisgar.db")
+    conexao = sqlite3.connect('grupo_fisgar.db')
     cursor = conexao.cursor()
+
+    cursor.execute("SELECT * FROM contas_a_pagar")
+    dados = cursor.fetchall()
+
+    def gerar_grafico_por_centro(dados):
+        agrupado = defaultdict(float)
+        for linha in dados:
+            try:
+                centro = linha[8] if linha[8] else 'Indefinido'  # Centro de Custo = l[8]
+                valor = float(linha[2]) if linha[2] else 0  # Valor = l[2]
+                agrupado[centro] += abs(valor)
+            except Exception as e:
+                print("Erro ao processar linha:", linha)
+                print("Erro:", e)
+
+        grafico = {
+            'data': [{
+                'x': list(agrupado.keys()),
+                'y': list(agrupado.values()),
+                'type': 'bar',
+                'marker': {'color': '#0d6efd'}
+            }],
+            'layout': {
+                'title': 'Total por Centro de Custo',
+                'xaxis': {'title': 'Centro de Custo'},
+                'yaxis': {'title': 'Total (R$)'},
+                'margin': {'t': 40, 'b': 60}
+            }
+        }
+
+        return json.dumps(grafico)
+
+    grafico_centro = gerar_grafico_por_centro(dados)
+
+    # ✅ Aqui entra a linha nova
+    grafico_centro = gerar_grafico_por_centro(dados)
+    print("🔍 Gráfico Centro de Custo:", grafico_centro)
 
     # Datas de filtro
     hoje = datetime.today()
@@ -116,6 +153,7 @@ def contas_a_pagar():
     grafico_status_json = json.dumps(fig_status, cls=plotly.utils.PlotlyJSONEncoder)
     grafico_dia_json = json.dumps(fig_dia, cls=plotly.utils.PlotlyJSONEncoder)
 
+
     totais = {
         "previsto": f"{total_previsto:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
         "pago": f"{total_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
@@ -138,4 +176,10 @@ def contas_a_pagar():
                            grafico_status=grafico_status_json,
                            grafico_dia=grafico_dia_json,
                            totais=totais,
-                           lancamentos_categoria=lancamentos_por_categoria)
+                           lancamentos_categoria=lancamentos_por_categoria,
+                           grafico_centro=grafico_centro  # ✅ agora está corretamente dentro
+
+
+    )
+
+

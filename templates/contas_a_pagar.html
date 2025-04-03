@@ -65,24 +65,96 @@
   {% endfor %}
 </div>
 
-  <!-- GRÁFICOS -->
-  <div class="row g-3">
-    <div class="col-md-6">
-      <div class="card shadow-sm rounded-4 p-2">
-        <div id="grafico_status"></div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card shadow-sm rounded-4 p-2">
-        <div id="grafico_categoria"></div>
-      </div>
+  <!-- LINHA 1: Pizza + Status -->
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card shadow-sm rounded-4 p-2">
+      <div id="grafico_categoria"></div>
     </div>
   </div>
-  <!-- Modal para exibir detalhes -->
-<div id="modalCategoria" class="modal" style="display:none; position: fixed; top: 10%; left: 10%; width: 80%; height: 70%; background: white; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.4); overflow-y: auto; z-index: 9999; padding: 20px;">
-  <h2 id="tituloModal" style="margin-top: 0;"></h2>
-  <button onclick="fecharModal()" style="float:right; margin-top:-40px; font-size:20px;">&times;</button>
-  <ul id="listaLancamentos"></ul>
+  <div class="col-md-6">
+    <div class="card shadow-sm rounded-4 p-2">
+      <div id="grafico_status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LINHA 2: Centro de Custo -->
+<div class="row g-3 mt-2">
+  <div class="col-md-12">
+    <div class="card shadow-sm rounded-4 p-3">
+      <div id="grafico_centro"></div>
+    </div>
+  </div> <!-- ✅ fechamento da coluna estava faltando -->
+</div>
+
+
+
+
+<!-- LINHA 3: Dia -->
+<div class="row g-3 mt-2">
+  <div class="col-md-12">
+    <div class="card shadow-sm rounded-4 p-2">
+      <div id="grafico_dia"></div>
+    </div>
+  </div>
+</div>
+
+
+  <!-- MODAL DE LANÇAMENTOS POR CATEGORIA (TELA CHEIA) -->
+<div id="modalCategoria" style="
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5); /* fundo escuro semi-transparente */
+  z-index: 9999;
+  padding: 40px;
+  overflow: auto;
+">
+
+  <!-- CONTEÚDO CENTRAL DO MODAL -->
+  <div style="
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+    font-family: 'Poppins', sans-serif;
+  ">
+    <!-- Cabeçalho -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h4 id="tituloModal" style="margin: 0; font-weight: 600; font-size: 20px;">Detalhes</h4>
+    </div>
+
+    <!-- Lista de lançamentos da categoria -->
+    <div id="listaLancamentos" style="display: flex; flex-direction: column; gap: 12px; max-height: 65vh; overflow-y: auto;"></div>
+
+    <!-- Botão Fechar (sempre visível no final do modal) -->
+    <div style="position: sticky; bottom: 0; background: white; padding-top: 20px; text-align: right;">
+      <button onclick="document.getElementById('modalCategoria').style.display = 'none'" style="
+        background-color: #0d6efd;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 30px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      " onmousedown="this.style.backgroundColor='#084298'" onmouseup="this.style.backgroundColor='#0d6efd'">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+    Fechar
+  </button>
 </div>
 
 
@@ -137,103 +209,86 @@
 <!-- PLOTLY CDN + GRÁFICOS -->
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-  Plotly.newPlot('grafico_status', {{ grafico_status | safe }}, {title: 'Total por Status'}, {responsive: true});
+  Plotly.newPlot('grafico_centro', {{ grafico_centro | safe }}, {responsive: true});
   Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
   Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
 </script>
-<!-- PLOTLY CDN + GRÁFICOS -->
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script>
-  Plotly.newPlot('grafico_status', {{ grafico_status | safe }}, {title: 'Total por Status'}, {responsive: true});
-  Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
-  Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
 
   // 🟡 INTERAÇÃO: Ao clicar em uma fatia do gráfico de categoria
-  document.getElementById('grafico_categoria').on('plotly_click', function(data) {
-    var categoria = data.points[0].label;
-    var lancamentos = {{ lancamentos_categoria | tojson }};
-    var lista = document.getElementById('listaLancamentos');
-    var titulo = document.getElementById('tituloModal');
-    lista.innerHTML = "";
-    titulo.innerText = "Lançamentos - Categoria: " + categoria;
+  <script>
+document.getElementById('grafico_categoria').on('plotly_click', function(data) {
+  var categoria = data.points[0].label;
+  var lancamentos = {{ lancamentos_categoria | tojson }};
+  var lista = document.getElementById('listaLancamentos');
+  var titulo = document.getElementById('tituloModal');
+  lista.innerHTML = "";
+  titulo.innerText = "Lançamentos - Categoria: " + categoria;
 
-    if (lancamentos[categoria]) {
-      lancamentos[categoria].forEach(function(item) {
-  var li = document.createElement("li");
-  li.innerHTML = `
-    <strong>Fornecedor:</strong> ${item.fornecedor} |
-    <strong>Vencimento:</strong> ${item.vencimento} |
-    <strong>Valor:</strong> ${item.valor}<br>
-    <strong>Status:</strong> ${item.status}
-  `;
-  li.style.marginBottom = "10px";
-  lista.appendChild(li);
+  if (lancamentos[categoria]) {
+    lancamentos[categoria].forEach(function(item) {
+      const card = document.createElement("div");
+
+      // 🎨 ESTILO COM AZUL PADRÃO FISGAR (#0d6efd)
+      card.style.display = "flex";
+      card.style.justifyContent = "space-between";
+      card.style.alignItems = "flex-start";
+      card.style.marginBottom = "14px";
+      card.style.borderLeft = "6px solid #0d6efd";  // Azul Fisgar
+      card.style.backgroundColor = "#fff";
+      card.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.05)";
+      card.style.borderRadius = "10px";
+      card.style.padding = "16px";
+      card.style.fontFamily = "'Poppins', 'Segoe UI', sans-serif";
+
+      const rawValor = item.valor;
+
+// 🧼 Remove "R$ ", pontos e troca vírgula por ponto, se existir
+const numeroLimpo = String(rawValor)
+  .replace(/[^\d,.-]/g, '')     // remove tudo que não for número, vírgula, ponto, hífen
+  .replace(/\./g, '')           // remove separador de milhar
+  .replace(',', '.');           // troca vírgula por ponto decimal
+
+const valorFloat = parseFloat(numeroLimpo);
+
+// 🔒 Formata para R$ com separador brasileiro
+const valorFormatado = valorFloat.toLocaleString('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  minimumFractionDigits: 2
 });
 
-      document.getElementById('modalCategoria').style.display = 'block';
-    }
-  });
-
-  // 🔴 Função para fechar o modal
-  function fecharModal() {
-    document.getElementById('modalCategoria').style.display = 'none';
-  }
-</script>
-<!-- MODAL FUTURISTA COM LANÇAMENTOS POR CATEGORIA -->
-<div id="modalCategoria" class="modal" style="display:none; position:fixed; top:10%; left:10%; width:80%; height:70%; background:white; border-radius:16px; box-shadow:0 0 25px rgba(0,0,0,0.5); overflow-y:auto; z-index:9999; padding:20px;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-    <h4 id="tituloModal" style="margin:0; font-weight:600; font-size:20px;">Detalhes</h4>
-    <button onclick="fecharModal()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
-  </div>
-  <div id="listaLancamentos" style="display:flex; flex-direction:column; gap:10px;"></div>
-</div>
-
-<!-- SCRIPT DE INTERAÇÃO NO GRÁFICO DE CATEGORIA -->
-<script>
-  Plotly.newPlot('grafico_status', {{ grafico_status | safe }}, {title: 'Total por Status'}, {responsive: true});
-  Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
-  Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
-
-  <script>
-  document.getElementById('grafico_categoria').on('plotly_click', function(data) {
-    var categoria = data.points[0].label;
-    var lancamentos = {{ lancamentos_categoria | tojson }};
-    var lista = document.getElementById('listaLancamentos');
-    var titulo = document.getElementById('tituloModal');
-    lista.innerHTML = "";
-    titulo.innerText = "Lançamentos - Categoria: " + categoria;
-
-    if (lancamentos[categoria]) {
-      lancamentos[categoria].forEach(function(item) {
-        var card = document.createElement("div");
-        card.style.padding = "10px";
-        card.style.marginBottom = "10px";
-        card.style.border = "1px solid #ddd";
-        card.style.borderRadius = "8px";
-        card.style.backgroundColor = "#f8f9fa";
-
-        card.innerHTML = `
-          <div style="display:flex; align-items:flex-start; gap:12px;">
-            <span style="font-size:22px; margin-top:4px;">🔑</span>
-            <div style="flex:1;">
-              <div style="font-weight:600;">${item.fornecedor}</div>
-              <div style="font-size:13px;">Venc: <strong>${item.vencimento}</strong></div>
-              <div style="font-size:13px;">Status: ${item.status === 'Pago' ? '<span style="color:green;">✔️ Pago</span>' : '<span style="color:red;">🔴 ' + item.status + '</span>'}</div>
-              <div style="font-size:13px;">Centro de Custo: <strong>${item.centro}</strong></div>
-              <div style="font-size:13px;">Tipo: <strong>${item.tipo}</strong></div>
-            </div>
-            <div style="font-weight:bold; color:#3c3c3c;">R$ ${item.valor}</div>
+      card.innerHTML = `
+        <div style="flex: 1;">
+          <div style="font-size: 15px; font-weight: 600; color: #2c3e50;">${item.fornecedor}</div>
+          <div style="font-size: 13px; color: #555;">${item.descricao || '-'}</div>
+          <div style="font-size: 13px; color: #777;">Categoria: <strong>${categoria}</strong></div>
+          <div style="font-size: 13px; color: #777;">Vencimento: <strong>${item.vencimento}</strong></div>
+          <div style="font-size: 13px; color: #777;">Centro de Custo: <strong>${item.centro}</strong></div>
+          <div style="font-size: 13px; color: #777;">Tipo: <strong>${item.tipo}</strong></div>
+          ${item.observacao ? `<div style="font-size: 12px; color: #999;">Obs: ${item.observacao}</div>` : ""}
+          <div style="margin-top: 6px; font-size: 13px; font-weight: 600; color: ${item.status === 'Pago' ? '#198754' : '#dc3545'};">
+            ${item.status === 'Pago' ? '✔ Pago' : '🔴 ' + item.status}
           </div>
-        `;
-        lista.appendChild(card);
-      });
-      document.getElementById('modalCategoria').style.display = 'block';
-    }
-  });
+        </div>
+        <div style="text-align: right; font-size: 18px; font-weight: bold; color: #2b2b2b; white-space: nowrap; margin-left: 16px;">
+          ${valorFormatado}
+        </div>
+      `;
 
-  function fecharModal() {
-    document.getElementById('modalCategoria').style.display = 'none';
+      lista.appendChild(card);
+    });
+
+    document.getElementById('modalCategoria').style.display = 'block';
   }
+});
+
+</script>
+function fecharModal() {
+  const modal = document.getElementById('modalCategoria');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
 </script>
 
 
