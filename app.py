@@ -138,6 +138,25 @@ def dashboard():
 @app.route("/contas-a-pagar")
 def rota_contas_a_pagar():
     return contas_a_pagar()
+@app.route("/baixar-lancamento/<codigo>", methods=["POST"])
+def baixar_lancamento(codigo):
+    conexao = sqlite3.connect('grupo_fisgar.db')
+    cursor = conexao.cursor()
+
+    hoje = datetime.now().strftime("%d/%m/%Y")
+    cursor.execute("""
+        UPDATE contas_a_pagar
+        SET status = 'Pago',
+            valor_pago = valor
+        WHERE codigo = ?
+    """, (codigo,))
+    conexao.commit()
+    conexao.close()
+    return '', 200
+@app.route("/teste-galaxia")
+def teste_galaxia():
+    return render_template("teste_galaxia.html")
+
 
 
 # 🚀 Executar o servidor

@@ -10,48 +10,12 @@ def contas_a_pagar():
     conexao = sqlite3.connect('grupo_fisgar.db')
     cursor = conexao.cursor()
 
-    cursor.execute("SELECT * FROM contas_a_pagar")
-    dados = cursor.fetchall()
-
-    def gerar_grafico_por_centro(dados):
-        agrupado = defaultdict(float)
-        for linha in dados:
-            try:
-                centro = linha[8] if linha[8] else 'Indefinido'  # Centro de Custo = l[8]
-                valor = float(linha[2]) if linha[2] else 0  # Valor = l[2]
-                agrupado[centro] += abs(valor)
-            except Exception as e:
-                print("Erro ao processar linha:", linha)
-                print("Erro:", e)
-
-        grafico = {
-            'data': [{
-                'x': list(agrupado.keys()),
-                'y': list(agrupado.values()),
-                'type': 'bar',
-                'marker': {'color': '#0d6efd'}
-            }],
-            'layout': {
-                'title': 'Total por Centro de Custo',
-                'xaxis': {'title': 'Centro de Custo'},
-                'yaxis': {'title': 'Total (R$)'},
-                'margin': {'t': 40, 'b': 60}
-            }
-        }
-
-        return json.dumps(grafico)
-
-    grafico_centro = gerar_grafico_por_centro(dados)
-
-    # ✅ Aqui entra a linha nova
-    grafico_centro = gerar_grafico_por_centro(dados)
-    print("🔍 Gráfico Centro de Custo:", grafico_centro)
-
-    # Datas de filtro
+    # 🔹 Filtro de datas
     hoje = datetime.today()
     data_de = request.args.get("data_de") or hoje.replace(day=1).strftime("%Y-%m-%d")
     data_ate = request.args.get("data_ate") or hoje.strftime("%Y-%m-%d")
 
+    # 🔹 Consulta com filtro de datas (para registros e gráfico)
     cursor.execute("""
         SELECT fornecedor, vencimento, valor, valor_pago, status, categorias, tipo, centro_de_custo, codigo
         FROM contas_a_pagar
@@ -60,7 +24,69 @@ def contas_a_pagar():
     """, (data_de, data_ate))
     registros = cursor.fetchall()
 
-    # Totais
+    # 🔹 Também usaremos os mesmos dados para o gráfico de centro de custo
+    dados = registros
+
+    def gerar_grafico_por_centro(dados):
+        import math
+
+        agrupado = defaultdict(float)
+        for linha in dados:
+            try:
+                centro = linha[7] if linha[7] else 'Indefinido'
+                valor = float(str(linha[2]).replace(",", ".")) if linha[2] else 0
+                agrupado[centro] += abs(valor)
+            except Exception as e:
+                print("Erro ao processar linha:", linha)
+                print("Erro:", e)
+
+        categorias = list(agrupado.keys())
+        valores = list(agrupado.values())
+        max_valor = max(valores) if valores else 1
+
+        tamanhos = [max((v / max_valor * 100), 20) for v in valores]
+
+        total = len(categorias)
+        posicoes_x = [math.cos(2 * math.pi * i / total) for i in range(total)]
+        posicoes_y = [math.sin(2 * math.pi * i / total) for i in range(total)]
+
+        cores = [
+            "#0d6efd", "#6f42c1", "#20c997", "#6610f2", "#5bc0de",
+            "#6c757d", "#0dcaf0", "#3f6791", "#375a7f", "#8e44ad"
+        ]
+        cores_usadas = [cores[i % len(cores)] for i in range(total)]
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=posicoes_x,
+            y=posicoes_y,
+            mode='markers+text',
+            marker=dict(
+                size=tamanhos,
+                color=cores_usadas,
+                opacity=0.88,
+                line=dict(width=2, color='rgba(255,255,255,0.1)')
+            ),
+            text=[
+                f"<b>{cat}</b><br>R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                for cat, v in zip(categorias, valores)
+            ],
+            textposition='bottom center',
+            hoverinfo='text'
+        ))
+
+        # 💫 Fundo estilo céu estrelado via gradiente radial CSS
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+        )
+
+        return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+    grafico_centro = gerar_grafico_por_centro(dados)
+
+    # 🔹 Cálculos de totais
     total_previsto = total_pago = saldo = total_atraso = total_hoje = total_amanha = 0
     hoje = datetime.now().date()
     amanha = hoje + timedelta(days=1)
@@ -85,10 +111,10 @@ def contas_a_pagar():
             print("Erro ao processar linha:", e)
             continue
 
-    # Gráfico de linhas (vazio por enquanto)
+    # 🔹 Gráfico de linhas (vazio por enquanto)
     fig_linhas = go.Figure()
 
-    # Gráfico por Categoria
+    # 🔹 Gráfico por Categoria
     dados_categoria = {}
     for r in registros:
         try:
@@ -101,7 +127,7 @@ def contas_a_pagar():
     fig_categoria = go.Figure()
     fig_categoria.add_trace(go.Pie(labels=list(dados_categoria.keys()), values=list(dados_categoria.values())))
 
-    # Gráfico por Status
+    # 🔹 Gráfico por Status
     dados_status = {}
     for r in registros:
         try:
@@ -114,7 +140,7 @@ def contas_a_pagar():
     fig_status = go.Figure()
     fig_status.add_trace(go.Pie(labels=list(dados_status.keys()), values=list(dados_status.values())))
 
-    # Gráfico por Dia (Barra)
+    # 🔹 Gráfico por Dia (Barra)
     dados_dia = defaultdict(float)
     for r in registros:
         try:
@@ -127,7 +153,7 @@ def contas_a_pagar():
     fig_dia = go.Figure()
     fig_dia.add_trace(go.Bar(x=list(dados_dia.keys()), y=list(dados_dia.values())))
 
-    # Lç por Categoria (para interação)
+    # 🔹 Lançamentos por Categoria (para modal ao clicar no gráfico)
     lancamentos_por_categoria = {}
     for r in registros:
         try:
@@ -143,17 +169,16 @@ def contas_a_pagar():
                 "tipo": r[6],
                 "centro": r[7]
             })
-
         except:
             continue
 
-    # Converte gráficos
+    # 🔹 Converte gráficos para JSON
     grafico_linhas_json = json.dumps(fig_linhas, cls=plotly.utils.PlotlyJSONEncoder)
     grafico_categoria_json = json.dumps(fig_categoria, cls=plotly.utils.PlotlyJSONEncoder)
     grafico_status_json = json.dumps(fig_status, cls=plotly.utils.PlotlyJSONEncoder)
     grafico_dia_json = json.dumps(fig_dia, cls=plotly.utils.PlotlyJSONEncoder)
 
-
+    # 🔹 Totais formatados
     totais = {
         "previsto": f"{total_previsto:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
         "pago": f"{total_pago:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
@@ -177,9 +202,5 @@ def contas_a_pagar():
                            grafico_dia=grafico_dia_json,
                            totais=totais,
                            lancamentos_categoria=lancamentos_por_categoria,
-                           grafico_centro=grafico_centro  # ✅ agora está corretamente dentro
-
-
+                           grafico_centro=grafico_centro
     )
-
-

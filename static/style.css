@@ -66,3 +66,83 @@ body {
     color: #25C2A0;
     font-weight: bold;
 }
+/* 🌌 CÉU ESTRELADO ANIMADO */
+.galaxy-bg {
+  position: relative;
+  background: radial-gradient(ellipse at center, #0b0c2a 0%, #000015 100%);
+  overflow: hidden;
+}
+
+.galaxy-bg::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: transparent;
+  box-shadow:
+    20px 40px #fff,
+    60px 80px #fff,
+    120px 100px #fff,
+    200px 150px #fff,
+    240px 200px #fff,
+    300px 90px #fff,
+    400px 130px #fff,
+    500px 180px #fff,
+    600px 220px #fff;
+  animation: starsTwinkle 4s infinite ease-in-out;
+  z-index: 0;
+}
+
+@keyframes starsTwinkle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+<style>
+/* Fundo estrelado com lua e planetas */
+.galaxy-real {
+  position: relative;
+  background: radial-gradient(ellipse at center, #0b0c2a 0%, #000010 100%);
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 30px;
+  margin: 40px auto;
+  width: 95%;
+  max-width: 1200px;
+}
+
+/* Estrelas */
+.galaxy-real::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: url('https://raw.githubusercontent.com/mota-tel/imagens-fisgar/main/stars.gif') repeat;
+  opacity: 0.15;
+  animation: moveStars 60s linear infinite;
+  z-index: 0;
+}
+
+/* Lua */
+.galaxy-real::after {
+  content: '';
+  position: absolute;
+  top: 40px;
+  right: 60px;
+  width: 80px;
+  height: 80px;
+  background: url('https://raw.githubusercontent.com/mota-tel/imagens-fisgar/main/lua.png') no-repeat center center;
+  background-size: cover;
+  opacity: 0.12;
+  z-index: 0;
+}
+
+/* Animação das estrelas */
+@keyframes moveStars {
+  from { background-position: 0 0; }
+  to   { background-position: -1000px 1000px; }
+}
+
+/* Garantir gráfico acima */
+#grafico_centro {
+  position: relative;
+  z-index: 2;
+}
+</style>

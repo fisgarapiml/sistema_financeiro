@@ -65,37 +65,30 @@
   {% endfor %}
 </div>
 
-  <!-- LINHA 1: Pizza + Status -->
-<div class="row g-3">
+  <!-- LINHA: Pizza + Lançamentos do Dia -->
+<div class="row g-3 mt-3">
+  <!-- Gráfico de Pizza -->
   <div class="col-md-6">
     <div class="card shadow-sm rounded-4 p-2">
       <div id="grafico_categoria"></div>
     </div>
   </div>
+
+  <!-- Lançamentos do Dia -->
   <div class="col-md-6">
-    <div class="card shadow-sm rounded-4 p-2">
-      <div id="grafico_status"></div>
+    <div class="card shadow-sm rounded-4 p-3" style="min-height: 100%;">
+      <h5 class="mb-3">📅 Lançamentos de Hoje</h5>
+      <div id="lancamentosHoje" style="display: flex; flex-direction: column; gap: 14px;"></div>
     </div>
   </div>
 </div>
 
-<!-- LINHA 2: Centro de Custo -->
+
+<!-- LINHA 2: Centro de Custo como universo estelar -->
 <div class="row g-3 mt-2">
   <div class="col-md-12">
-    <div class="card shadow-sm rounded-4 p-3">
+    <div class="galaxy-real">
       <div id="grafico_centro"></div>
-    </div>
-  </div> <!-- ✅ fechamento da coluna estava faltando -->
-</div>
-
-
-
-
-<!-- LINHA 3: Dia -->
-<div class="row g-3 mt-2">
-  <div class="col-md-12">
-    <div class="card shadow-sm rounded-4 p-2">
-      <div id="grafico_dia"></div>
     </div>
   </div>
 </div>
@@ -213,6 +206,57 @@
   Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
   Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
 </script>
+<script>
+  const hoje = new Date().toLocaleDateString("pt-BR");
+  const lancamentos = {{ lancamentos_categoria | tojson }};
+  const container = document.getElementById("lancamentosHoje");
+
+  Object.keys(lancamentos).forEach(categoria => {
+    lancamentos[categoria].forEach(item => {
+      if (item.vencimento === hoje) {
+        const card = document.createElement("div");
+        card.style.padding = "16px";
+        card.style.borderRadius = "14px";
+        card.style.background = "#f8f9fa";
+        card.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.07)";
+        card.style.borderLeft = item.status === 'Pago' ? "5px solid green" : "5px solid red";
+
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 16px;">${item.fornecedor}</div>
+              <div style="font-size: 13px; color: #777;">📂 ${categoria}</div>
+              <div style="font-size: 13px; color: #777;">🏷️ ${item.tipo} | 🏢 ${item.centro}</div>
+              <div style="margin-top: 6px;" id="status-${item.codigo}">
+  ${item.status === 'Pago'
+    ? '<span style="color: green; font-weight: 500;">✔️ Pago</span>'
+    : `<span style="color: red; font-weight: 500;">🔴 Pendente</span>
+       <button onclick="baixarLancamento('${item.codigo}')" style="
+         margin-top: 6px;
+         background-color: #0d6efd;
+         border: none;
+         color: white;
+         font-size: 12px;
+         padding: 4px 10px;
+         border-radius: 20px;
+         cursor: pointer;
+         display: inline-block;
+       ">💸 Dar Baixa</button>`}
+</div>
+
+            </div>
+            <div style="text-align: right; font-size: 18px; font-weight: bold; color: #2b2b2b;">
+              💰 R$ ${item.valor}
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      }
+    });
+  });
+</script>
+
 
   // 🟡 INTERAÇÃO: Ao clicar em uma fatia do gráfico de categoria
   <script>
@@ -290,6 +334,19 @@ function fecharModal() {
   }
 }
 </script>
+function baixarLancamento(codigo) {
+  fetch(`/baixar-lancamento/${codigo}`, { method: 'POST' })
+    .then(response => {
+      if (response.ok) {
+        const div = document.getElementById('status-' + codigo);
+        div.innerHTML = '<span style="color: green; font-weight: 500;">✔️ Pago</span>';
+      } else {
+        alert("Erro ao dar baixa.");
+      }
+    });
+}
+</script>
+
 
 
 
