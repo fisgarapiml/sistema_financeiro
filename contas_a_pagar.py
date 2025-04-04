@@ -1,6 +1,7 @@
 from flask import render_template, request
 import sqlite3
 import plotly
+import math
 import plotly.graph_objs as go
 import json
 from datetime import datetime, timedelta
@@ -28,58 +29,89 @@ def contas_a_pagar():
     dados = registros
 
     def gerar_grafico_por_centro(dados):
+        import random
         import math
+        from collections import defaultdict
+        import plotly.graph_objs as go
+        import plotly
 
         agrupado = defaultdict(float)
         for linha in dados:
             try:
-                centro = linha[7] if linha[7] else 'Indefinido'
-                valor = float(str(linha[2]).replace(",", ".")) if linha[2] else 0
+                centro = linha[8] if linha[8] else 'Indefinido'
+                valor = float(linha[2]) if linha[2] else 0
                 agrupado[centro] += abs(valor)
-            except Exception as e:
-                print("Erro ao processar linha:", linha)
-                print("Erro:", e)
+            except:
+                continue
 
-        categorias = list(agrupado.keys())
+        centros = list(agrupado.keys())
         valores = list(agrupado.values())
         max_valor = max(valores) if valores else 1
 
-        tamanhos = [max((v / max_valor * 100), 20) for v in valores]
+        tamanhos = [max(40, (v / max_valor) * 140) for v in valores]
 
-        total = len(categorias)
-        posicoes_x = [math.cos(2 * math.pi * i / total) for i in range(total)]
-        posicoes_y = [math.sin(2 * math.pi * i / total) for i in range(total)]
+        cores = ['#00ffff', '#ff69b4', '#ffd700', '#00ff00', '#ff6347', '#1e90ff',
+                 '#ff1493', '#32cd32', '#ffa500', '#9932cc', '#00ced1', '#ff4500']
+        cores_usadas = [cores[i % len(cores)] for i in range(len(centros))]
 
-        cores = [
-            "#0d6efd", "#6f42c1", "#20c997", "#6610f2", "#5bc0de",
-            "#6c757d", "#0dcaf0", "#3f6791", "#375a7f", "#8e44ad"
-        ]
-        cores_usadas = [cores[i % len(cores)] for i in range(total)]
+        random.seed(42)
+        angulo_inicial = random.randint(0, 360)
+        distancia_base = 8.0
+        x, y = [], []
+
+        for i in range(len(centros)):
+            angulo = math.radians(angulo_inicial + i * 90)
+            raio = distancia_base + i * 3.5
+            x.append(raio * math.cos(angulo))
+            y.append(raio * math.sin(angulo))
+
+        customdata = centros
 
         fig = go.Figure()
 
         fig.add_trace(go.Scatter(
-            x=posicoes_x,
-            y=posicoes_y,
+            x=x,
+            y=y,
             mode='markers+text',
             marker=dict(
                 size=tamanhos,
                 color=cores_usadas,
-                opacity=0.88,
-                line=dict(width=2, color='rgba(255,255,255,0.1)')
+                opacity=0.95,
+                line=dict(color='white', width=2)
             ),
             text=[
-                f"<b>{cat}</b><br>R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                for cat, v in zip(categorias, valores)
+                f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                for v in valores
             ],
             textposition='bottom center',
-            hoverinfo='text'
+            textfont=dict(color='white', size=10),
+            hoverinfo='text',
+            customdata=customdata,
+            hovertemplate="%{text}<br>Centro: %{customdata}<extra></extra>"
         ))
 
-        # 💫 Fundo estilo céu estrelado via gradiente radial CSS
         fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
+            title={
+                'text': "🌌 Total por Centro de Custo",
+                'x': 0.5,
+                'xanchor': 'center',
+                'font': {'size': 22, 'color': 'white'}
+            },
             paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            margin=dict(t=100, b=160, l=40, r=40),
+            height=660,
+            showlegend=False,
+            clickmode='event+select'
+        )
+
+        fig.update_traces(
+            hoverlabel=dict(bgcolor="black", font_size=13, font_color="white"),
+            hoverinfo="skip",
+            selected=dict(marker=dict(opacity=1)),
+            unselected=dict(marker=dict(opacity=0.2))
         )
 
         return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -114,18 +146,86 @@ def contas_a_pagar():
     # 🔹 Gráfico de linhas (vazio por enquanto)
     fig_linhas = go.Figure()
 
-    # 🔹 Gráfico por Categoria
-    dados_categoria = {}
-    for r in registros:
-        try:
-            categoria = r[5]
-            valor = float(str(r[2]).replace(",", ".") or 0)
-            if categoria:
-                dados_categoria[categoria] = dados_categoria.get(categoria, 0) + abs(valor)
-        except:
-            continue
-    fig_categoria = go.Figure()
-    fig_categoria.add_trace(go.Pie(labels=list(dados_categoria.keys()), values=list(dados_categoria.values())))
+    def gerar_grafico_por_categoria(dados):
+        import random
+        import math
+        from collections import defaultdict
+        import plotly.graph_objs as go
+        import plotly
+
+        agrupado = defaultdict(float)
+        for linha in dados:
+            try:
+                categoria = linha[5] if linha[5] else 'Indefinido'
+                valor = float(str(linha[2]).replace(",", ".") or 0)
+                agrupado[categoria] += abs(valor)
+            except:
+                continue
+
+        categorias = list(agrupado.keys())
+        valores = list(agrupado.values())
+        max_valor = max(valores) if valores else 1
+
+        tamanhos = [max(40, (v / max_valor) * 140) for v in valores]
+
+        cores = ['#00ffff', '#ff69b4', '#ffd700', '#00ff00', '#ff6347', '#1e90ff',
+                 '#ff1493', '#32cd32', '#ffa500', '#9932cc', '#00ced1', '#ff4500']
+        cores_usadas = [cores[i % len(cores)] for i in range(len(categorias))]
+
+        random.seed(42)
+        angulo_inicial = random.randint(0, 360)
+        x, y = [], []
+
+        for i in range(len(categorias)):
+            angulo = math.radians(angulo_inicial + i * 137.5)
+            raio = 25.5 + i * 50
+            x.append((raio * math.cos(angulo)) + 20)
+            y.append((raio * math.sin(angulo)) - 40)
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=y,
+            mode='markers+text',
+            marker=dict(
+                size=tamanhos,
+                color=cores_usadas,
+                opacity=0.95,
+                line=dict(color='white', width=2)
+            ),
+            text=[
+                f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                for v in valores
+            ],
+            textposition='bottom center',
+            textfont=dict(color='white', size=10),
+            hoverinfo='text',
+            customdata=categorias,
+            hovertemplate="%{text}<br>Categoria: %{customdata}<extra></extra>"
+        ))
+
+        fig.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(visible=False, range=[-450, 450]),
+            yaxis=dict(visible=False, range=[-450, 450]),
+            margin=dict(t=40, b=40, l=40, r=40),
+            height=500,
+            width=500,
+            showlegend=False,
+            clickmode='event+select'
+        )
+
+        fig.update_traces(
+            hoverlabel=dict(bgcolor="black", font_size=13, font_color="white"),
+            hoverinfo="skip",
+            selected=dict(marker=dict(opacity=1)),
+            unselected=dict(marker=dict(opacity=0.2))
+        )
+
+        return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
 
     # 🔹 Gráfico por Status
     dados_status = {}
@@ -174,7 +274,7 @@ def contas_a_pagar():
 
     # 🔹 Converte gráficos para JSON
     grafico_linhas_json = json.dumps(fig_linhas, cls=plotly.utils.PlotlyJSONEncoder)
-    grafico_categoria_json = json.dumps(fig_categoria, cls=plotly.utils.PlotlyJSONEncoder)
+    grafico_categoria_json = gerar_grafico_por_categoria(dados)
     grafico_status_json = json.dumps(fig_status, cls=plotly.utils.PlotlyJSONEncoder)
     grafico_dia_json = json.dumps(fig_dia, cls=plotly.utils.PlotlyJSONEncoder)
 

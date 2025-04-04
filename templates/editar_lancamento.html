@@ -1,89 +1,100 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Lançamento</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 40px;
+    }
 
-{% block conteudo %}
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: rgba(255,255,255,0.05);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(0,255,255,0.2);
+    }
+
+    h2 {
+      color: #00ffff;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: none;
+      background: #1e293b;
+      color: white;
+    }
+
+    .btn {
+      margin-top: 30px;
+      background: #00ffff;
+      color: black;
+      padding: 12px 20px;
+      font-weight: bold;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background: white;
+    }
+  </style>
+</head>
+<body>
+
 <div class="container">
-  <div class="bg-white p-4 rounded shadow-sm">
-    <h4 class="mb-4" style="color:#00009f;">✏️ Editar Lançamento</h4>
-    <form method="POST">
+  <h2>✏️ Editar Lançamento</h2>
+  <form method="POST" action="/salvar-edicao/{{ codigo }}">
+    <label>Fornecedor</label>
+    <input name="fornecedor" value="{{ dados[0] }}">
 
-      <div class="row g-3">
+    <label>Vencimento</label>
+    <input name="vencimento" value="{{ dados[1] }}">
 
-        <div class="col-md-6">
-          <label class="form-label">Fornecedor</label>
-          <input type="text" name="fornecedor" class="form-control" value="{{ dados[3] }}" list="lista-fornecedores">
-          <datalist id="lista-fornecedores">
-            {% for f in fornecedores %}
-              <option value="{{ f }}">
-            {% endfor %}
-          </datalist>
-        </div>
+    <label>Valor</label>
+    <input name="valor" value="{{ dados[2] }}">
 
-        <div class="col-md-6">
-          <label class="form-label">Categoria</label>
-          <select name="categoria" class="form-select">
-            <option value="">Selecione</option>
-            {% for cat in categorias %}
-              <option value="{{ cat }}" {% if cat == dados[27] %}selected{% endif %}>{{ cat }}</option>
-            {% endfor %}
-          </select>
-        </div>
+    <label>Valor Pago</label>
+    <input name="valor_pago" value="{{ dados[3] }}">
 
-        <div class="col-md-4">
-          <label class="form-label">Tipo de Custo</label>
-          <input type="text" name="tipo" class="form-control" value="{{ dados[28] }}">
-        </div>
+    <label>Status</label>
+    <select name="status">
+      <option value="Pago" {% if dados[4] == 'Pago' %}selected{% endif %}>Pago</option>
+      <option value="Pendente" {% if dados[4] == 'Pendente' %}selected{% endif %}>Pendente</option>
+    </select>
 
-        <div class="col-md-4">
-          <label class="form-label">Centro de Custo</label>
-          <input type="text" name="centro_de_custo" class="form-control" value="{{ dados[29] }}">
-        </div>
+    <label>Categoria</label>
+    <input name="categorias" value="{{ dados[5] }}">
 
-        <div class="col-md-4">
-          <label class="form-label">Status</label>
-          <select name="status" class="form-select">
-            <option value="Aberto" {% if dados[26] == 'Aberto' %}selected{% endif %}>Aberto</option>
-            <option value="Pago" {% if dados[26] == 'Pago' %}selected{% endif %}>Pago</option>
-            <option value="Vencido" {% if dados[26] == 'Vencido' %}selected{% endif %}>Vencido</option>
-          </select>
-        </div>
+    <label>Tipo</label>
+    <input name="tipo" value="{{ dados[6] }}">
 
-        <div class="col-md-6">
-          <label class="form-label">Vencimento</label>
-          <input type="date" name="vencimento" class="form-control" value="{{ dados[1] }}">
-        </div>
+    <label>Centro de Custo</label>
+    <input name="centro_de_custo" value="{{ dados[7] }}">
 
-        <div class="col-md-6">
-          <label class="form-label">Data de Emissão</label>
-          <input type="date" name="emissao" class="form-control" value="{{ dados[15] }}">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label">Valor Total (R$)</label>
-          <input type="number" step="0.01" name="valor" class="form-control" value="{{ dados[6] }}">
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label">Valor Pago (R$)</label>
-          <input type="number" step="0.01" name="valor_pago" class="form-control" value="{{ dados[8] }}">
-        </div>
-
-        <div class="col-md-12">
-          <label class="form-label">Produtos (resumo)</label>
-          <input type="text" name="produtos" class="form-control" value="{{ dados[10] }}">
-        </div>
-
-        <div class="col-md-12">
-          <label class="form-label">Observações</label>
-          <textarea name="observacoes" class="form-control" rows="3">{{ dados[21] }}</textarea>
-        </div>
-      </div>
-
-      <div class="d-flex justify-content-between mt-4">
-        <a href="/contas" class="btn btn-secondary">← Voltar</a>
-        <button type="submit" class="btn btn-primary" style="background-color: #00009f;">💾 Salvar Alterações</button>
-      </div>
-
-    </form>
-  </div>
+    <button class="btn">Salvar Alterações</button>
+  </form>
 </div>
-{% endblock %}
+
+</body>
+</html>

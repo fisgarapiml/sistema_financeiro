@@ -1,6 +1,37 @@
 {% extends "base.html" %}
 
 {% block conteudo %}
+<style>
+  .grafico-galaxia-categorias {
+    background-image: url('/static/images/galaxia5.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 24px;
+    padding: 40px 30px;
+    margin-top: 40px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 25px rgba(0,0,0,0.3);
+    color: white;
+  }
+
+  .grafico-galaxia-categorias h5 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .grafico-galaxia-categorias h5::before {
+    content: '🪐';
+    font-size: 22px;
+  }
+</style>
+
 <div class="container mt-4" style="font-family: 'Poppins', sans-serif;">
 
   <!-- TOPO: Título e Filtros -->
@@ -68,11 +99,12 @@
   <!-- LINHA: Pizza + Lançamentos do Dia -->
 <div class="row g-3 mt-3">
   <!-- Gráfico de Pizza -->
-  <div class="col-md-6">
-    <div class="card shadow-sm rounded-4 p-2">
-      <div id="grafico_categoria"></div>
-    </div>
+<!-- NOVO BLOCO COM FUNDO GALÁXIA PARA CATEGORIAS -->
+<div class="col-md-6">
+  <div class="grafico-galaxia-categorias">
+    <div id="grafico_categoria"></div>
   </div>
+</div>
 
   <!-- Lançamentos do Dia -->
   <div class="col-md-6">
@@ -84,18 +116,57 @@
 </div>
 
 
-<!-- LINHA 2: Centro de Custo como universo estelar -->
-<div class="row g-3 mt-2">
-  <div class="col-md-12">
-    <div class="galaxy-real">
-      <div id="grafico_centro"></div>
-    </div>
-  </div>
+<!-- 🔭 GRÁFICO GALÁXIA - CENTRO DE CUSTO -->
+  <style>
+#grafico_centro {
+  background-image: url("/static/images/galaxia.png"); /* nome do seu arquivo */
+  background-size: cover;
+  background-position: center;
+  border-radius: 20px;
+  padding: 10px;
+}
+</style>
+
+<style>
+  .grafico-galaxia {
+    background-image: url('/static/images/galaxia5.png'); /*
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 24px;
+    padding: 40px 30px;
+    margin-top: 40px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 25px rgba(0,0,0,0.3);
+    color: white;
+  }
+
+  .grafico-galaxia h5 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .grafico-galaxia h5::before {
+    content: '🪐';
+    font-size: 22px;
+  }
+</style>
+
+<div class="grafico-galaxia">
+  <h5>Total por Centro de Custo</h5>
+  <div id="grafico_centro"></div>
 </div>
 
 
+
   <!-- MODAL DE LANÇAMENTOS POR CATEGORIA (TELA CHEIA) -->
-<div id="modalCategoria" style="
   display: none;
   position: fixed;
   top: 0;
@@ -206,6 +277,114 @@
   Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
   Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
 </script>
+<!-- GRÁFICO GALÁCTICO DE CATEGORIAS -->
+<script>
+  // Renderiza o gráfico de categorias
+  Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {responsive: true});
+
+  // Ativa o clique nas bolhas
+  document.addEventListener("DOMContentLoaded", function () {
+    const categoriaGrafico = document.getElementById('grafico_categoria');
+    if (categoriaGrafico && categoriaGrafico.__plotly__) {
+      categoriaGrafico.on('plotly_click', function (data) {
+        const categoria = data.points[0].customdata;
+        abrirModalCategoria(categoria);
+      });
+    }
+  });
+
+  // Abre o modal com os dados da categoria
+  function abrirModalCategoria(categoria) {
+    fetch(`/detalhes-categoria?categoria=${encodeURIComponent(categoria)}`)
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById("modalConteudo").innerHTML = html;
+        document.getElementById("modalCategoria").style.display = "block";
+      });
+  }
+
+  function fecharModalCategoria() {
+    document.getElementById("modalCategoria").style.display = "none";
+  }
+</script>
+
+<!-- 🔭 MODAL DETALHES POR CATEGORIA -->
+<div id="modalCategoria" style="
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  overflow-y: auto;
+  padding: 40px;
+  font-family: 'Segoe UI', sans-serif;
+">
+  <div style="
+    background: #0f172a;
+    border-radius: 24px;
+    padding: 30px;
+    color: white;
+    max-width: 900px;
+    margin: 0 auto;
+    box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    position: relative;
+  ">
+    <div style="text-align: right; margin-bottom: 15px;">
+      <button onclick="fecharModalCategoria()" style="
+        background: #0d6efd;
+        border: none;
+        padding: 10px 20px;
+        color: white;
+        font-weight: 600;
+        border-radius: 10px;
+        cursor: pointer;
+      ">Fechar</button>
+    </div>
+    <div id="modalConteudo"></div>
+  </div>
+</div>
+
+<!-- 🧠 SCRIPT DE INTERAÇÃO -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const categoriaGrafico = document.getElementById('grafico_categoria');
+    if (categoriaGrafico) {
+      categoriaGrafico.on('plotly_click', function (data) {
+        const categoria = data.points[0].customdata;
+        abrirModalCategoria(categoria);
+      });
+    }
+  });
+
+  function abrirModalCategoria(categoria) {
+    fetch(`/detalhes-categoria?categoria=${encodeURIComponent(categoria)}`)
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById("modalConteudo").innerHTML = html;
+        document.getElementById("modalCategoria").style.display = "block";
+      });
+  }
+
+  function fecharModalCategoria() {
+    document.getElementById("modalCategoria").style.display = "none";
+    Plotly.restyle("grafico_categoria", { 'selectedpoints': [null] });
+  }
+</script>
+
+
+  <!-- Conteúdo preenchido dinamicamente -->
+  <div id="modalConteudo" style="
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(255,255,255,0.1);
+  "></div>
+
+</div>
+
 <script>
   const hoje = new Date().toLocaleDateString("pt-BR");
   const lancamentos = {{ lancamentos_categoria | tojson }};
@@ -285,6 +464,90 @@ document.getElementById('grafico_categoria').on('plotly_click', function(data) {
       card.style.fontFamily = "'Poppins', 'Segoe UI', sans-serif";
 
       const rawValor = item.valor;
+<script>
+  const graficoCategoria = {{ grafico_categoria | safe }};
+
+  Plotly.newPlot('grafico_categoria', graficoCategoria.data, graficoCategoria.layout);
+
+  const grafico = document.getElementById('grafico_categoria');
+
+  grafico.on('plotly_click', function(data) {
+    const categoria = data.points[0].customdata;
+    abrirModalCategoria(categoria);
+  });
+
+  function abrirModalCategoria(categoria) {
+    fetch(`/detalhes-categoria?categoria=${encodeURIComponent(categoria)}`)
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById("modalConteudo").innerHTML = html;
+        document.getElementById("modalCategoria").style.display = "block";
+      });
+  }
+
+  function fecharModalCategoria() {
+    document.getElementById("modalCategoria").style.display = "none";
+  }
+</script>
+<!-- MODAL DE DETALHES POR CATEGORIA -->
+<div id="modalCategoria" style="
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  overflow-y: auto;
+  padding: 40px;
+  font-family: 'Segoe UI', sans-serif;
+">
+  <div style="
+    background: #0f172a;
+    border-radius: 24px;
+    padding: 30px;
+    color: white;
+    max-width: 900px;
+    margin: 0 auto;
+    box-shadow: 0 0 25px rgba(0,0,0,0.6);
+    position: relative;
+  ">
+    <script>
+  // 🎯 Ao clicar na bolha (categoria), chama a função abrirModalCategoria
+  document.addEventListener("DOMContentLoaded", function () {
+    const categoriaGrafico = document.getElementById('grafico_categoria');
+    if (categoriaGrafico) {
+      categoriaGrafico.on('plotly_click', function (data) {
+        const categoria = data.points[0].customdata;
+        abrirModalCategoria(categoria);
+      });
+    }
+  });
+
+  function abrirModalCategoria(categoria) {
+    fetch(`/detalhes-categoria?categoria=${encodeURIComponent(categoria)}`)
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById("modalConteudo").innerHTML = html;
+        document.getElementById("modalCategoria").style.display = "block";
+      });
+  }
+
+  <script>
+function fecharModalCategoria() {
+  document.getElementById("modalCategoria").style.display = "none";
+
+  // 🪐 Resetar seleção no gráfico de categoria
+  const grafico = document.getElementById("grafico_categoria");
+  if (grafico && grafico.data) {
+    Plotly.restyle("grafico_categoria", {'selectedpoints': [null]});
+  }
+}
+</script>
+
+
+
 
 // 🧼 Remove "R$ ", pontos e troca vírgula por ponto, se existir
 const numeroLimpo = String(rawValor)

@@ -153,9 +153,125 @@ def baixar_lancamento(codigo):
     conexao.commit()
     conexao.close()
     return '', 200
-@app.route("/teste-galaxia")
-def teste_galaxia():
-    return render_template("teste_galaxia.html")
+
+
+@app.route("/detalhes-categoria")
+def detalhes_categoria():
+    categoria = request.args.get("categoria")
+
+    conexao = sqlite3.connect("grupo_fisgar.db")
+    cursor = conexao.cursor()
+    cursor.execute("""
+        SELECT fornecedor, vencimento, valor, valor_pago, status, tipo, centro_de_custo, codigo
+        FROM contas_a_pagar
+        WHERE categorias = ?
+    """, (categoria,))
+    resultados = cursor.fetchall()
+    conexao.close()
+
+    html = f"<h4 style='margin-bottom: 20px; color: #00ffff;'>🪐 Categoria: {categoria}</h4>"
+
+    if not resultados:
+        html += "<p>Nenhum lançamento encontrado.</p>"
+    else:
+        for r in resultados:
+            status = r[4]
+            cor_status = "#6c757d"  # cinza padrão
+            cor_valor = "#ffffff"   # branco padrão
+
+            if status.lower() == "pago":
+                cor_status = "#00ff7f"  # verde
+                cor_valor = "#00ff7f"
+            elif status.lower() == "pendente":
+                cor_status = "#ff9800"  # laranja
+                cor_valor = "#ff9800"
+            elif status.lower() == "atrasado":
+                cor_status = "#ff3b3b"  # vermelho
+                cor_valor = "#ff3b3b"
+
+            html += f"""
+            <div style="
+                background: rgba(255,255,255,0.05);
+                padding: 15px 20px 20px 20px;
+                margin-bottom: 14px;
+                border-radius: 14px;
+                box-shadow: 0 0 18px rgba(0,0,0,0.3);
+                border-left: 8px solid {cor_status};
+                position: relative;
+            ">
+
+              <!-- Botão Editar flutuante -->
+              <a href="/editar/{r[7]}" style="
+                  position: absolute;
+                  top: 15px;
+                  right: 20px;
+                  background: {cor_status};
+                  color: black;
+                  padding: 6px 12px;
+                  border-radius: 8px;
+                  font-weight: bold;
+                  text-decoration: none;
+                  font-size: 13px;
+                  box-shadow: 0 0 6px rgba(0,0,0,0.4);
+              ">✏️ Editar</a>
+
+              <strong>Fornecedor:</strong> {r[0]}<br>
+              <strong>Vencimento:</strong> {r[1]}<br>
+              <strong>Valor:</strong> <span style="color: {cor_valor};">R$ {float(r[2]):,.2f}</span><br>
+              <strong>Pago:</strong> <span style="color: {cor_valor};">R$ {float(r[3]):,.2f}</span><br>
+              <strong>Status:</strong> {r[4]}<br>
+              <strong>Tipo:</strong> {r[5]}<br>
+              <strong>Centro de Custo:</strong> {r[6]}
+            </div>
+            """
+
+    return html
+
+
+@app.route("/editar/<codigo>")
+def editar_lancamento(codigo):
+    conexao = sqlite3.connect("grupo_fisgar.db")
+    cursor = conexao.cursor()
+
+    cursor.execute("""
+        SELECT fornecedor, vencimento, valor, valor_pago, status, categorias, tipo, centro_de_custo
+        FROM contas_a_pagar
+        WHERE codigo = ?
+    """, (codigo,))
+    dados = cursor.fetchone()
+    conexao.close()
+
+    if not dados:
+        return f"<h3 style='color: red;'>Lançamento com código {codigo} não encontrado.</h3>"
+
+    return render_template("editar_lancamento.html", codigo=codigo, dados=dados)
+@app.route("/salvar-edicao/<codigo>", methods=["POST"])
+def salvar_edicao(codigo):
+    dados = (
+        request.form["fornecedor"],
+        request.form["vencimento"],
+        request.form["valor"],
+        request.form["valor_pago"],
+        request.form["status"],
+        request.form["categorias"],
+        request.form["tipo"],
+        request.form["centro_de_custo"],
+        codigo
+    )
+
+    conexao = sqlite3.connect("grupo_fisgar.db")
+    cursor = conexao.cursor()
+    cursor.execute("""
+        UPDATE contas_a_pagar
+        SET fornecedor = ?, vencimento = ?, valor = ?, valor_pago = ?, status = ?,
+            categorias = ?, tipo = ?, centro_de_custo = ?
+        WHERE codigo = ?
+    """, dados)
+    conexao.commit()
+    conexao.close()
+
+    return redirect("/contas-a-pagar")
+
 
 
 

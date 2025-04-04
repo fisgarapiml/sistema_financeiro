@@ -146,3 +146,15 @@ body {
   z-index: 2;
 }
 </style>
+
+<style>
+#grafico_centro {
+  background-image: url("/static/images/galaxia\ 2.png"); /* substitua pelo caminho certo */
+  background-size: cover;
+  background-position: center;
+  border-radius: 16px;
+  padding: 20px;
+}
+</style>
+
+
