@@ -1,616 +1,398 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Contas a Pagar</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      background-color: #ffffff;
+      color: #000000;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+    }
 
-{% block conteudo %}
-<style>
-  .grafico-galaxia-categorias {
-    background-image: url('/static/images/galaxia5.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius: 24px;
-    padding: 40px 30px;
-    margin-top: 40px;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 0 25px rgba(0,0,0,0.3);
-    color: white;
-  }
+    body.tema-escuro {
+      background-color: #1e1e1e !important;
+      color: white !important;
+    }
 
-  .grafico-galaxia-categorias h5 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #ffffff;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+    body.tema-escuro .form-control,
+    body.tema-escuro .form-select {
+      background-color: #2b2b2b !important;
+      color: white !important;
+      border-color: #444 !important;
+    }
 
-  .grafico-galaxia-categorias h5::before {
-    content: '🪐';
-    font-size: 22px;
-  }
-</style>
+    body.tema-escuro .card-body,
+    body.tema-escuro .card {
+      background-color: #1e1e1e !important;
+      color: white !important;
+    }
 
-<div class="container mt-4" style="font-family: 'Poppins', sans-serif;">
+    body.tema-escuro .btn-light {
+      background-color: #444 !important;
+      color: white !important;
+      border: none;
+    }
 
-  <!-- TOPO: Título e Filtros -->
-  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
-    <h3 class="mb-0">📋 Contas a Pagar</h3>
+    body.tema-escuro .text-dark {
+      color: white !important;
+    }
 
-    <form method="GET" class="d-flex gap-2 flex-wrap align-items-end">
-      <div class="border border-primary border-2 rounded-3 px-3 py-2 shadow-sm" style="min-width: 160px;">
-        <label class="form-label text-muted small mb-1">De</label>
-        <input type="date" name="data_de" value="{{ data_de }}" class="form-control form-control-sm border-0">
-      </div>
-      <div class="border border-primary border-2 rounded-3 px-3 py-2 shadow-sm" style="min-width: 160px;">
-        <label class="form-label text-muted small mb-1">Até</label>
-        <input type="date" name="data_ate" value="{{ data_ate }}" class="form-control form-control-sm border-0">
-      </div>
-      <button type="submit" class="btn btn-primary px-4 shadow-sm">Filtrar</button>
-    </form>
+    body.tema-escuro .bg-white {
+      background-color: #1e1e1e !important;
+    }
+
+    body.tema-escuro .topo-fixo {
+      background-color: #222 !important;
+    }
+
+    .menu-lateral {
+      width: 220px;
+      background-color: #001aff;
+      padding: 30px 20px;
+      min-height: 100vh;
+      color: white;
+    }
+
+    .menu-lateral h2 {
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+
+    .menu-lateral a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .conteudo {
+      flex: 1;
+    }
+
+    .topo-fixo {
+      position: sticky;
+      top: 0;
+      background-color: #007bff;
+      padding: 10px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .topo-fixo h1 {
+      margin: 0;
+      font-size: 20px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="menu-lateral">
+    <h2>Grupo Fisgar</h2>
+    <a href="/">🏠 Dashboard</a>
+    <a href="/contas-a-pagar">📁 Contas a Pagar</a>
+    <a href="/compras">🧾 Compras</a>
+    <a href="/produtos">📦 Produtos</a>
   </div>
 
- <!-- LINHA ÚNICA: TODOS OS 6 CARDS -->
-<div class="row g-3 mb-4">
-  {% set cards = [
-    {'titulo': 'Previsto', 'valor': totais.previsto},
-    {'titulo': 'Pago', 'valor': totais.pago},
-    {'titulo': 'Saldo', 'valor': totais.saldo},
-    {'titulo': 'Atraso', 'valor': totais.atraso, 'classe': 'text-danger'},
-    {'titulo': 'Hoje', 'valor': totais.hoje, 'classe': (
-        'text-danger' if totais.hoje|float < 0 else 'text-success' if totais.hoje|float > 0 else 'text-muted'
-      )},
-    {'titulo': 'Amanhã', 'valor': totais.amanha}
-  ] %}
-  {% for c in cards %}
-  <div class="col-md-2 col-sm-4 col-6">
-    <div class="card border border-primary border-2 rounded-4 shadow-sm overflow-hidden"
-         style="background-color: white; min-height: 100px; transition: all 0.2s ease-in-out;"
-         onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(13,110,253,0.15)'"
-         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.08)'">
+  <div class="conteudo">
 
-      <!-- Faixa Azul com Título Centralizado -->
-      <div class="bg-primary text-white py-1 px-2 text-center"
-           style="font-size: 0.8rem; font-weight: 500;">
-        {{ c.titulo }}
-      </div>
-
-      <!-- Valor Centralizado -->
-      <div class="card-body d-flex align-items-center justify-content-center fs-5"
-           style="min-height: 60px;">
-        {% if c.titulo == 'Amanhã' %}
-          {% if c.valor|float > 0 %}
-            <span class="text-danger">R$ {{ "%.2f"|format(c.valor|float) }}</span>
-          {% else %}
-            <span class="text-success">✅</span>
-          {% endif %}
-        {% else %}
-          <span class="{{ c.classe if c.classe is defined else (
-            'text-danger' if c.valor|float < 0 else 'text-success' if c.valor|float > 0 else 'text-muted'
-          ) }}">{{ c.valor }}</span>
+    <!-- TOPO -->
+    <div class="topo-fixo d-flex justify-content-between align-items-center">
+      <div class="d-flex gap-3 align-items-center">
+        {% if status != 'Todos' %}
+        <a href="/contas-a-pagar" class="btn btn-light btn-sm">← Voltar</a>
         {% endif %}
+        <h1 style="margin: 0; font-size: 20px;">Contas a Pagar</h1>
       </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-white btn-sm border px-3 py-1" title="Editar selecionados">✏️ Editar em Massa</button>
+        <button type="submit" class="btn btn-white btn-sm border px-3 py-1" title="Dar baixa nos selecionados">💸 Baixar em Massa</button>
+        <button type="submit" class="btn btn-white btn-sm border px-3 py-1" onclick="return confirm('Deseja excluir os lançamentos selecionados?')" title="Excluir selecionados">🗑️ Excluir em Massa</button>
+        <button class="btn btn-sm btn-light" onclick="alternarTema()" id="botao-tema" title="Alternar tema">🌙</button>
+      </div>
+    </div>
+
+    <!-- FILTRO -->
+    <form method="get" class="d-flex align-items-center gap-3 py-3 px-4">
+      <label for="inicio" class="mb-0">De:</label>
+      <input type="date" name="inicio" id="inicio" value="{{ data_inicio }}" class="form-control form-control-sm bg-white text-dark border-secondary" style="max-width: 150px;">
+
+      <label for="fim" class="mb-0">Até:</label>
+      <input type="date" name="fim" id="fim" value="{{ data_fim }}" class="form-control form-control-sm bg-white text-dark border-secondary" style="max-width: 150px;">
+
+      <label for="status" class="mb-0">Status:</label>
+      <select name="status" id="status" class="form-select form-select-sm bg-white text-dark border-secondary" style="max-width: 180px;">
+        <option value="Todos" {% if status == 'Todos' %}selected{% endif %}>Todos</option>
+        <option value="Pago" {% if status == 'Pago' %}selected{% endif %}>Pago</option>
+        <option value="Aberto" {% if status == 'Aberto' %}selected{% endif %}>Aberto</option>
+        <option value="Pendente" {% if status == 'Pendente' %}selected{% endif %}>Pendente</option>
+        <option value="Pago Parcialmente" {% if status == 'Pago Parcialmente' %}selected{% endif %}>Pago Parcialmente</option>
+        <option value="atrasados" {% if status == 'atrasados' %}selected{% endif %}>Atrasados</option>
+        <option value="hoje" {% if status == 'hoje' %}selected{% endif %}>Hoje</option>
+      </select>
+
+      <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+    </form>
+
+    <!-- BOTÃO PDF -->
+    {% if status == 'hoje' %}
+    <div class="px-4 pt-2 pb-3">
+      <a href="/gerar-pdf-hoje" class="btn btn-outline-dark btn-sm">
+        📄 Gerar PDF do Dia
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- CARDS -->
+    <div class="row g-3 mx-4 mb-4">
+      {% set cores = {'total': 'primary', 'pagos': 'primary', 'pendentes': 'primary', 'hoje': 'primary', 'atrasados': 'danger'} %}
+      {% for chave, valor in totais.items() %}
+        <div class="col-md-2 col-sm-4 col-6">
+          {% if chave in ['atrasados', 'hoje'] %}
+          <a href="/contas-a-pagar?status={{ chave }}" style="text-decoration: none;">
+          {% endif %}
+            <div class="card border border-{{ cores[chave] }} border-2 rounded-4 shadow-sm overflow-hidden"
+                 style="background-color: #ffffff; min-height: 100px; transition: 0.2s ease-in-out;"
+                 onmouseover="this.style.transform='scale(1.02)'"
+                 onmouseout="this.style.transform='scale(1)'">
+              <div class="bg-{{ cores[chave] }} text-white py-1 px-2 text-center" style="font-size: 0.8rem;">
+                {{ chave | capitalize }}
+              </div>
+              <div class="card-body d-flex align-items-center justify-content-center fs-5 text-dark">
+                {{ (valor * -1) | formatar }}
+              </div>
+            </div>
+          {% if chave in ['atrasados', 'hoje'] %}
+          </a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+{% if tipos %}
+<div class="mx-4 mb-3">
+  <label class="fw-bold">Tipos de lançamentos encontrados:</label>
+  <div class="d-flex flex-wrap gap-2 mt-2">
+    {% for t in tipos %}
+      <span class="badge rounded-pill bg-light border text-dark px-3 py-2">
+        {{ t }}
+      </span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+<!-- 🔒 Cabeçalho fixo da listagem -->
+<div class="mx-4 sticky-top bg-white py-2 border-bottom text-muted small" style="z-index: 10;">
+  <div class="d-flex gap-3 ps-2 fw-bold text-uppercase">
+    <div style="width: 30px;"></div>
+    <div style="width: 180px;">[Fornecedor]</div>
+    <div style="width: 160px;">[Categoria]</div>
+    <div style="width: 200px;">[Plano de Contas]</div>
+    <div style="width: 160px;">[Centro de Custo]</div>
+    <div style="width: 120px;">Vencimento</div>
+    <div style="width: 120px;">Previsto</div>
+    <div style="width: 120px;">Pago</div>
+    <div style="width: 100px;">Status</div>
+    <div style="width: 110px;">Ações</div>
+  </div>
+</div>
+
+<!-- 🧾 Listagem com checkbox + botões -->
+<form method="post">
+  {% for item in lancamentos %}
+  <div class="border border-primary rounded-4 d-flex align-items-center px-3 py-2 mb-2 mx-4 bg-white text-dark small">
+    <div class="d-flex align-items-center gap-3 w-100">
+
+      <!-- ✅ Checkbox -->
+      <div style="width: 30px;">
+        <input type="checkbox" name="codigos" value="{{ item.codigo }}">
+      </div>
+
+      <div style="width: 180px;">
+        <span style="color: #007bff;">[</span>{{ item.fornecedor }}<span style="color: #007bff;">]</span>
+      </div>
+
+      <div style="width: 160px;">
+        <span style="color: #6610f2;">[</span>{{ item.categoria }}<span style="color: #6610f2;">]</span>
+      </div>
+
+      <div style="width: 200px;">
+        <span style="color: #198754;">[</span>{{ item.plano }}<span style="color: #198754;">]</span>
+      </div>
+
+      <div style="width: 160px;">
+        <span style="color: #fd7e14;">[</span>{{ item.centro }}<span style="color: #fd7e14;">]</span>
+      </div>
+
+      <div style="width: 120px;">
+        {{ item.vencimento }}
+      </div>
+
+      <div style="width: 120px;">
+        <strong>{{ item.valor | formatar }}</strong>
+      </div>
+
+      <div style="width: 120px;">
+        {{ item.valor_pago | formatar }}
+      </div>
+
+      <div style="width: 100px;">
+        <span class="badge
+          {% if item.status == 'Pago' %}bg-success
+          {% elif item.status == 'Aberto' %}bg-warning text-dark
+          {% elif item.status == 'Atrasado' %}bg-danger
+          {% else %}bg-secondary{% endif %}">
+          {{ item.status }}
+        </span>
+      </div>
+
+      <!-- 🎯 Botões por lançamento -->
+      <div class="d-flex flex-row gap-2" style="width: 110px;">
+        <button class="btn btn-outline-warning btn-sm px-2 py-1" title="Editar lançamento">✏️</button>
+        <button class="btn btn-outline-info btn-sm px-2 py-1" title="Dar baixa">💸</button>
+        <button class="btn btn-outline-danger btn-sm px-2 py-1" title="Excluir lançamento" onclick="return confirm('Excluir este lançamento?')">🗑️</button>
+      </div>
+
     </div>
   </div>
   {% endfor %}
-</div>
-
-  <!-- LINHA: Pizza + Lançamentos do Dia -->
-<div class="row g-3 mt-3">
-  <!-- Gráfico de Pizza -->
-<!-- NOVO BLOCO COM FUNDO GALÁXIA PARA CATEGORIAS -->
-<div class="col-md-6">
-  <div class="grafico-galaxia-categorias">
-    <div id="grafico_categoria"></div>
-  </div>
-</div>
-
-  <!-- Lançamentos do Dia -->
-  <div class="col-md-6">
-    <div class="card shadow-sm rounded-4 p-3" style="min-height: 100%;">
-      <h5 class="mb-3">📅 Lançamentos de Hoje</h5>
-      <div id="lancamentosHoje" style="display: flex; flex-direction: column; gap: 14px;"></div>
-    </div>
-  </div>
-</div>
-
-
-<!-- 🔭 GRÁFICO GALÁXIA - CENTRO DE CUSTO -->
-  <style>
-#grafico_centro {
-  background-image: url("/static/images/galaxia.png"); /* nome do seu arquivo */
-  background-size: cover;
-  background-position: center;
-  border-radius: 20px;
-  padding: 10px;
-}
-</style>
-
-<style>
-  .grafico-galaxia {
-    background-image: url('/static/images/galaxia5.png'); /*
-
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border-radius: 24px;
-    padding: 40px 30px;
-    margin-top: 40px;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 0 25px rgba(0,0,0,0.3);
-    color: white;
-  }
-
-  .grafico-galaxia h5 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #ffffff;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .grafico-galaxia h5::before {
-    content: '🪐';
-    font-size: 22px;
-  }
-</style>
-
-<div class="grafico-galaxia">
-  <h5>Total por Centro de Custo</h5>
-  <div id="grafico_centro"></div>
-</div>
+</form>
 
 
 
-  <!-- MODAL DE LANÇAMENTOS POR CATEGORIA (TELA CHEIA) -->
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5); /* fundo escuro semi-transparente */
-  z-index: 9999;
-  padding: 40px;
-  overflow: auto;
-">
-
-  <!-- CONTEÚDO CENTRAL DO MODAL -->
-  <div style="
-    max-width: 900px;
-    margin: auto;
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
-    font-family: 'Poppins', sans-serif;
-  ">
-    <!-- Cabeçalho -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h4 id="tituloModal" style="margin: 0; font-weight: 600; font-size: 20px;">Detalhes</h4>
-    </div>
-
-    <!-- Lista de lançamentos da categoria -->
-    <div id="listaLancamentos" style="display: flex; flex-direction: column; gap: 12px; max-height: 65vh; overflow-y: auto;"></div>
-
-    <!-- Botão Fechar (sempre visível no final do modal) -->
-    <div style="position: sticky; bottom: 0; background: white; padding-top: 20px; text-align: right;">
-      <button onclick="document.getElementById('modalCategoria').style.display = 'none'" style="
-        background-color: #0d6efd;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 30px;
-        font-size: 14px;
-        font-weight: 500;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-      " onmousedown="this.style.backgroundColor='#084298'" onmouseup="this.style.backgroundColor='#0d6efd'">
-        Fechar
-      </button>
-    </div>
-  </div>
-</div>
-
-    Fechar
-  </button>
-</div>
-
-
-  <div class="row mt-4">
-    <div class="col">
-      <div class="card shadow-sm rounded-4 p-2">
-        <div id="grafico_dia"></div>
-      </div>
-    </div>
   </div>
 
-  <!-- TABELA DE LANÇAMENTOS -->
-  <div class="table-responsive mt-5">
-    <table class="table table-bordered table-striped table-hover">
-      <thead class="table-dark">
-        <tr>
-          <th>Fornecedor</th>
-          <th>Vencimento</th>
-          <th>Valor</th>
-          <th>Pago</th>
-          <th>Pendente</th>
-          <th>Status</th>
-          <th>Categoria</th>
-          <th>Tipo</th>
-          <th>Centro de Custo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for l in dados %}
-        <tr>
-          <td>{{ l[0] }}</td>
-          <td>{{ l[1] }}</td>
-          <td>R$ {{ "%.2f"|format(l[2]|float) }}</td>
-          <td>R$ {{ "%.2f"|format(l[3]|float) }}</td>
-          <td>R$ {{ "%.2f"|format(l[4]|float) }}</td>
-          <td><span class="badge bg-secondary">{{ l[5] }}</span></td>
-          <td>{{ l[6] }}</td>
-          <td>{{ l[7] }}</td>
-          <td>{{ l[8] }}</td>
-          <td>
-            <a href="/editar/{{ l[9] }}" class="btn btn-sm btn-outline-primary">✏️</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-</div>
-
-<!-- PLOTLY CDN + GRÁFICOS -->
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script>
-  Plotly.newPlot('grafico_centro', {{ grafico_centro | safe }}, {responsive: true});
-  Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {title: 'Total por Categoria'}, {responsive: true});
-  Plotly.newPlot('grafico_dia', {{ grafico_dia | safe }}, {title: 'Contas a Pagar por Dia'}, {responsive: true});
-</script>
-<!-- GRÁFICO GALÁCTICO DE CATEGORIAS -->
-<script>
-  // Renderiza o gráfico de categorias
-  Plotly.newPlot('grafico_categoria', {{ grafico_categoria | safe }}, {responsive: true});
-
-  // Ativa o clique nas bolhas
-  document.addEventListener("DOMContentLoaded", function () {
-    const categoriaGrafico = document.getElementById('grafico_categoria');
-    if (categoriaGrafico && categoriaGrafico.__plotly__) {
-      categoriaGrafico.on('plotly_click', function (data) {
-        const categoria = data.points[0].customdata;
-        abrirModalCategoria(categoria);
-      });
-    }
-  });
-
-  // Abre o modal com os dados da categoria
-  function abrirModalCategoria(categoria) {
-    fetch(`/detalhes-categoria?categoria=${encodeURIComponent(categoria)}`)
-      .then(response => response.text())
-      .then(html => {
-        document.getElementById("modalConteudo").innerHTML = html;
-        document.getElementById("modalCategoria").style.display = "block";
-      });
-  }
-
-  function fecharModalCategoria() {
-    document.getElementById("modalCategoria").style.display = "none";
-  }
-</script>
-
-<!-- 🔭 MODAL DETALHES POR CATEGORIA -->
-<div id="modalCategoria" style="
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 9999;
-  overflow-y: auto;
-  padding: 40px;
-  font-family: 'Segoe UI', sans-serif;
-">
-  <div style="
-    background: #0f172a;
-    border-radius: 24px;
-    padding: 30px;
-    color: white;
-    max-width: 900px;
-    margin: 0 auto;
-    box-shadow: 0 0 25px rgba(0,0,0,0.6);
-    position: relative;
-  ">
-    <div style="text-align: right; margin-bottom: 15px;">
-      <button onclick="fecharModalCategoria()" style="
-        background: #0d6efd;
-        border: none;
-        padding: 10px 20px;
-        color: white;
-        font-weight: 600;
-        border-radius: 10px;
-        cursor: pointer;
-      ">Fechar</button>
-    </div>
-    <div id="modalConteudo"></div>
-  </div>
-</div>
-
-<!-- 🧠 SCRIPT DE INTERAÇÃO -->
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const categoriaGrafico = document.getElementById('grafico_categoria');
-    if (categoriaGrafico) {
-      categoriaGrafico.on('plotly_click', function (data) {
-        const categoria = data.points[0].customdata;
-        abrirModalCategoria(categoria);
-      });
-    }
-  });
-
-  function abrirModalCategoria(categoria) {
-    fetch(`/detalhes-categoria?categoria=${encodeURIComponent(categoria)}`)
-      .then(response => response.text())
-      .then(html => {
-        document.getElementById("modalConteudo").innerHTML = html;
-        document.getElementById("modalCategoria").style.display = "block";
-      });
-  }
-
-  function fecharModalCategoria() {
-    document.getElementById("modalCategoria").style.display = "none";
-    Plotly.restyle("grafico_categoria", { 'selectedpoints': [null] });
-  }
-</script>
-
-
-  <!-- Conteúdo preenchido dinamicamente -->
-  <div id="modalConteudo" style="
-    background: rgba(255, 255, 255, 0.05);
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(255,255,255,0.1);
-  "></div>
-
-</div>
-
-<script>
-  const hoje = new Date().toLocaleDateString("pt-BR");
-  const lancamentos = {{ lancamentos_categoria | tojson }};
-  const container = document.getElementById("lancamentosHoje");
-
-  Object.keys(lancamentos).forEach(categoria => {
-    lancamentos[categoria].forEach(item => {
-      if (item.vencimento === hoje) {
-        const card = document.createElement("div");
-        card.style.padding = "16px";
-        card.style.borderRadius = "14px";
-        card.style.background = "#f8f9fa";
-        card.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.07)";
-        card.style.borderLeft = item.status === 'Pago' ? "5px solid green" : "5px solid red";
-
-        card.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div style="flex: 1;">
-              <div style="font-weight: 600; font-size: 16px;">${item.fornecedor}</div>
-              <div style="font-size: 13px; color: #777;">📂 ${categoria}</div>
-              <div style="font-size: 13px; color: #777;">🏷️ ${item.tipo} | 🏢 ${item.centro}</div>
-              <div style="margin-top: 6px;" id="status-${item.codigo}">
-  ${item.status === 'Pago'
-    ? '<span style="color: green; font-weight: 500;">✔️ Pago</span>'
-    : `<span style="color: red; font-weight: 500;">🔴 Pendente</span>
-       <button onclick="baixarLancamento('${item.codigo}')" style="
-         margin-top: 6px;
-         background-color: #0d6efd;
-         border: none;
-         color: white;
-         font-size: 12px;
-         padding: 4px 10px;
-         border-radius: 20px;
-         cursor: pointer;
-         display: inline-block;
-       ">💸 Dar Baixa</button>`}
-</div>
-
-            </div>
-            <div style="text-align: right; font-size: 18px; font-weight: bold; color: #2b2b2b;">
-              💰 R$ ${item.valor}
-            </div>
-          </div>
-        `;
-
-        container.appendChild(card);
-      }
-    });
-  });
-</script>
-
-
-  // 🟡 INTERAÇÃO: Ao clicar em uma fatia do gráfico de categoria
+  <!-- SCRIPT -->
   <script>
-document.getElementById('grafico_categoria').on('plotly_click', function(data) {
-  var categoria = data.points[0].label;
-  var lancamentos = {{ lancamentos_categoria | tojson }};
-  var lista = document.getElementById('listaLancamentos');
-  var titulo = document.getElementById('tituloModal');
-  lista.innerHTML = "";
-  titulo.innerText = "Lançamentos - Categoria: " + categoria;
-
-  if (lancamentos[categoria]) {
-    lancamentos[categoria].forEach(function(item) {
-      const card = document.createElement("div");
-
-      // 🎨 ESTILO COM AZUL PADRÃO FISGAR (#0d6efd)
-      card.style.display = "flex";
-      card.style.justifyContent = "space-between";
-      card.style.alignItems = "flex-start";
-      card.style.marginBottom = "14px";
-      card.style.borderLeft = "6px solid #0d6efd";  // Azul Fisgar
-      card.style.backgroundColor = "#fff";
-      card.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.05)";
-      card.style.borderRadius = "10px";
-      card.style.padding = "16px";
-      card.style.fontFamily = "'Poppins', 'Segoe UI', sans-serif";
-
-      const rawValor = item.valor;
-<script>
-  const graficoCategoria = {{ grafico_categoria | safe }};
-
-  Plotly.newPlot('grafico_categoria', graficoCategoria.data, graficoCategoria.layout);
-
-  const grafico = document.getElementById('grafico_categoria');
-
-  grafico.on('plotly_click', function(data) {
-    const categoria = data.points[0].customdata;
-    abrirModalCategoria(categoria);
-  });
-
-  function abrirModalCategoria(categoria) {
-    fetch(`/detalhes-categoria?categoria=${encodeURIComponent(categoria)}`)
-      .then(response => response.text())
-      .then(html => {
-        document.getElementById("modalConteudo").innerHTML = html;
-        document.getElementById("modalCategoria").style.display = "block";
-      });
-  }
-
-  function fecharModalCategoria() {
-    document.getElementById("modalCategoria").style.display = "none";
-  }
-</script>
-<!-- MODAL DE DETALHES POR CATEGORIA -->
-<div id="modalCategoria" style="
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 9999;
-  overflow-y: auto;
-  padding: 40px;
-  font-family: 'Segoe UI', sans-serif;
-">
-  <div style="
-    background: #0f172a;
-    border-radius: 24px;
-    padding: 30px;
-    color: white;
-    max-width: 900px;
-    margin: 0 auto;
-    box-shadow: 0 0 25px rgba(0,0,0,0.6);
-    position: relative;
-  ">
-    <script>
-  // 🎯 Ao clicar na bolha (categoria), chama a função abrirModalCategoria
-  document.addEventListener("DOMContentLoaded", function () {
-    const categoriaGrafico = document.getElementById('grafico_categoria');
-    if (categoriaGrafico) {
-      categoriaGrafico.on('plotly_click', function (data) {
-        const categoria = data.points[0].customdata;
-        abrirModalCategoria(categoria);
-      });
-    }
-  });
-
-  function abrirModalCategoria(categoria) {
-    fetch(`/detalhes-categoria?categoria=${encodeURIComponent(categoria)}`)
-      .then(response => response.text())
-      .then(html => {
-        document.getElementById("modalConteudo").innerHTML = html;
-        document.getElementById("modalCategoria").style.display = "block";
-      });
-  }
-
-  <script>
-function fecharModalCategoria() {
-  document.getElementById("modalCategoria").style.display = "none";
-
-  // 🪐 Resetar seleção no gráfico de categoria
-  const grafico = document.getElementById("grafico_categoria");
-  if (grafico && grafico.data) {
-    Plotly.restyle("grafico_categoria", {'selectedpoints': [null]});
-  }
-}
-</script>
-
-
-
-
-// 🧼 Remove "R$ ", pontos e troca vírgula por ponto, se existir
-const numeroLimpo = String(rawValor)
-  .replace(/[^\d,.-]/g, '')     // remove tudo que não for número, vírgula, ponto, hífen
-  .replace(/\./g, '')           // remove separador de milhar
-  .replace(',', '.');           // troca vírgula por ponto decimal
-
-const valorFloat = parseFloat(numeroLimpo);
-
-// 🔒 Formata para R$ com separador brasileiro
-const valorFormatado = valorFloat.toLocaleString('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-  minimumFractionDigits: 2
-});
-
-      card.innerHTML = `
-        <div style="flex: 1;">
-          <div style="font-size: 15px; font-weight: 600; color: #2c3e50;">${item.fornecedor}</div>
-          <div style="font-size: 13px; color: #555;">${item.descricao || '-'}</div>
-          <div style="font-size: 13px; color: #777;">Categoria: <strong>${categoria}</strong></div>
-          <div style="font-size: 13px; color: #777;">Vencimento: <strong>${item.vencimento}</strong></div>
-          <div style="font-size: 13px; color: #777;">Centro de Custo: <strong>${item.centro}</strong></div>
-          <div style="font-size: 13px; color: #777;">Tipo: <strong>${item.tipo}</strong></div>
-          ${item.observacao ? `<div style="font-size: 12px; color: #999;">Obs: ${item.observacao}</div>` : ""}
-          <div style="margin-top: 6px; font-size: 13px; font-weight: 600; color: ${item.status === 'Pago' ? '#198754' : '#dc3545'};">
-            ${item.status === 'Pago' ? '✔ Pago' : '🔴 ' + item.status}
-          </div>
-        </div>
-        <div style="text-align: right; font-size: 18px; font-weight: bold; color: #2b2b2b; white-space: nowrap; margin-left: 16px;">
-          ${valorFormatado}
-        </div>
-      `;
-
-      lista.appendChild(card);
-    });
-
-    document.getElementById('modalCategoria').style.display = 'block';
-  }
-});
-
-</script>
-function fecharModal() {
-  const modal = document.getElementById('modalCategoria');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-}
-</script>
-function baixarLancamento(codigo) {
-  fetch(`/baixar-lancamento/${codigo}`, { method: 'POST' })
-    .then(response => {
-      if (response.ok) {
-        const div = document.getElementById('status-' + codigo);
-        div.innerHTML = '<span style="color: green; font-weight: 500;">✔️ Pago</span>';
+    function alternarTema() {
+      const body = document.body;
+      const btn = document.getElementById('botao-tema');
+      const modoAtual = body.classList.toggle('tema-escuro');
+      if (body.classList.contains('tema-escuro')) {
+        btn.innerText = '☀️';
+        localStorage.setItem('tema', 'escuro');
       } else {
-        alert("Erro ao dar baixa.");
+        btn.innerText = '🌙';
+        localStorage.setItem('tema', 'claro');
       }
-    });
+    }
+
+    window.onload = () => {
+      const tema = localStorage.getItem('tema');
+      const body = document.body;
+      const btn = document.getElementById('botao-tema');
+      if (tema === 'escuro') {
+        body.classList.add('tema-escuro');
+        if (btn) btn.innerText = '☀️';
+      }
+    }
+  </script>
+<!-- ✅ BOTÃO DE AÇÃO EM MASSA - EDITAR -->
+<div class="d-flex justify-content-end gap-2 px-4 mt-3">
+  <button type="button" class="btn btn-white btn-sm border px-3 py-1" title="Editar selecionados" onclick="abrirModalEditarMassa()">✏️ Editar em Massa</button>
+</div>
+
+<!-- ✅ MODAL EDITAR EM MASSA -->
+<div class="modal fade" id="modalEditarMassa" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Editar Lote Selecionado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="/salvar-edicao-massa">
+        <div class="modal-body">
+          <table class="table table-sm table-bordered align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Fornecedor</th>
+                <th>Categoria</th>
+                <th>Plano</th>
+                <th>Centro</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Vencimento</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-edicao"></tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Salvar Alterações</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ SCRIPTS DO MODAL -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function abrirModalEditarMassa() {
+  const selecionados = Array.from(document.querySelectorAll('input[name="codigos"]:checked'));
+  if (selecionados.length === 0) {
+    alert('Selecione ao menos um lançamento para editar.');
+    return;
+  }
+
+  const tabela = document.getElementById("tabela-edicao");
+  tabela.innerHTML = "";
+
+  selecionados.forEach(input => {
+    const codigo = input.value;
+    const linha = input.closest('.d-flex');
+    const colunas = linha.querySelectorAll('div');
+    const fornecedor = colunas[1]?.innerText.trim().replace('[','').replace(']','') || "";
+    const categoria = colunas[2]?.innerText.trim().replace('[','').replace(']','') || "";
+    const plano = colunas[3]?.innerText.trim().replace('[','').replace(']','') || "";
+    const centro = colunas[4]?.innerText.trim().replace('[','').replace(']','') || "";
+    const vencimento = colunas[5]?.innerText.trim() || "";
+    const valor = colunas[6]?.innerText.trim().replace('R$','').replaceAll('.','').replace(',','.') || "";
+    const status = colunas[8]?.innerText.trim() || "";
+
+    tabela.innerHTML += `
+      <tr>
+        <td><input type="hidden" name="codigos" value="${codigo}">${codigo}</td>
+        <td><input type="text" class="form-control form-control-sm" name="fornecedor_${codigo}" value="${fornecedor}"></td>
+        <td><input type="text" class="form-control form-control-sm" name="categoria_${codigo}" value="${categoria}"></td>
+        <td><input type="text" class="form-control form-control-sm" name="plano_${codigo}" value="${plano}"></td>
+        <td><input type="text" class="form-control form-control-sm" name="centro_${codigo}" value="${centro}"></td>
+        <td><input type="number" step="0.01" class="form-control form-control-sm" name="valor_${codigo}" value="${valor}"></td>
+        <td>
+          <select class="form-select form-select-sm" name="status_${codigo}">
+            <option ${status === 'Aberto' ? 'selected' : ''}>Aberto</option>
+            <option ${status === 'Pago' ? 'selected' : ''}>Pago</option>
+            <option ${status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+            <option ${status === 'Pago Parcialmente' ? 'selected' : ''}>Pago Parcialmente</option>
+          </select>
+        </td>
+        <td><input type="date" class="form-control form-control-sm" name="vencimento_${codigo}" value="${formatarData(vencimento)}"></td>
+      </tr>
+    `;
+  });
+
+  const modal = new bootstrap.Modal(document.getElementById('modalEditarMassa'));
+  modal.show();
+}
+
+function formatarData(dataBR) {
+  const partes = dataBR.split("/");
+  if (partes.length === 3) {
+    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+  }
+  return "";
 }
 </script>
 
-
-
-
-{% endblock %}
+</body>
+</html>

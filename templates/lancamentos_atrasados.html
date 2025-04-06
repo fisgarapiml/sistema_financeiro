@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Lançamentos em Atraso</title>
+    <link rel="stylesheet" href="/static/estilo.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 40px;
+        }
+        h2 {
+            color: #d83c3c;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .card div {
+            margin: 5px 10px;
+        }
+        input[type="text"], input[type="date"], input[type="number"] {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        .botao {
+            background-color: #4CAF50;
+            color: white;
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .botao:hover {
+            background-color: #45a049;
+        }
+        .linha-final {
+            margin-top: 30px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.04);
+        }
+    </style>
+</head>
+<body>
+    <h2>🔴 Lançamentos em Atraso</h2>
+
+    <form method="POST">
+        {% for item in lancamentos %}
+        <div class="card">
+            <div><strong>{{ item.fornecedor }}</strong></div>
+            <div>Categoria: {{ item.categoria }}</div>
+            <div>Vencimento: {{ item.vencimento }}</div>
+            <div>Valor: {{ item.valor }}</div>
+            <div>
+                Valor Pago:
+                <input type="text" name="valor_pago_{{ item.codigo }}" value="{{ item.valor }}">
+            </div>
+            <div>
+                Pagamento:
+                <input type="date" name="data_pagamento_{{ item.codigo }}" value="{{ hoje }}">
+            </div>
+            <div>
+                <button class="botao" name="acao" value="baixar_individual" onclick="setCodigo('{{ item.codigo }}')">Dar Baixa</button>
+            </div>
+            <div>
+                <input type="checkbox" name="codigos" value="{{ item.codigo }}"> Selecionar
+            </div>
+        </div>
+        {% endfor %}
+
+        <input type="hidden" id="codigo_hidden" name="codigo">
+
+        <script>
+            function setCodigo(codigo) {
+                document.getElementById("codigo_hidden").value = codigo;
+            }
+        </script>
+
+        <div class="linha-final">
+            <h3>✅ Baixa em Massa</h3>
+            <label>Valor padrão:</label>
+            <input type="text" name="valor_padrao" value="0,00">
+            <label>Data:</label>
+            <input type="date" name="data_padrao" value="{{ hoje }}">
+            <button class="botao" name="acao" value="baixar_em_massa">Aplicar em Massa</button>
+        </div>
+    </form>
+</body>
+</html>
