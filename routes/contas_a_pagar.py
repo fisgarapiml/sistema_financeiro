@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, request
-import sqlite3
+from flask import Blueprint, render_template, request, redirect, jsonify
 from datetime import datetime
+import sqlite3
 
 contas_a_pagar_bp = Blueprint("contas_a_pagar", __name__)
+
 
 def formatar_valor(valor):
     try:
@@ -10,132 +11,152 @@ def formatar_valor(valor):
     except:
         return 0.00
 
+
 @contas_a_pagar_bp.route("/contas-a-pagar")
 def contas_a_pagar():
-    status = request.args.get("status", "Todos")
-    data_inicio = request.args.get("inicio")
-    data_fim = request.args.get("fim")
-    hoje = datetime.today()
+    try:
+        status = request.args.get("status", "Todos")
+        data_inicio = request.args.get("inicio")
+        data_fim = request.args.get("fim")
+        formato_json = request.args.get("json") == "1"
+        hoje = datetime.today()
+        data_hoje_str = hoje.strftime("%d/%m/%Y")
 
-    if not data_inicio:
-        data_inicio = hoje.replace(day=1).strftime("%Y-%m-%d")
-    if not data_fim:
-        data_fim = hoje.strftime("%Y-%m-%d")
+        # Conexão com o banco
+        conn = sqlite3.connect("grupo_fisgar.db")
+        cursor = conn.cursor()
 
-    conn = sqlite3.connect("grupo_fisgar.db")
-    cursor = conn.cursor()
+        # Consulta para JSON (lançamentos do dia)
+        if formato_json and status == "hoje":
+            try:
+                cursor.execute("""
+                    SELECT codigo, fornecedor, categorias, centro_de_custo, tipo,
+                           vencimento, valor, valor_pago, status, plano_de_contas
+                    FROM contas_a_pagar
+                    WHERE vencimento = ? AND status != 'Pago'
+                """, (data_hoje_str,))
 
-    cursor.execute("""
-        SELECT codigo, fornecedor, categorias, centro_de_custo, tipo,
-               vencimento, valor, valor_pago, status, plano_de_contas
-        FROM contas_a_pagar
-    """)
-    dados = cursor.fetchall()
-    conn.close()
+                dados = cursor.fetchall()
+                conn.close()
 
-    dados_filtrados = []
-    for d in dados:
+                if not dados:
+                    return jsonify({
+                        "lancamentos": [],
+                        "total": 0,
+                        "message": "Nenhum lançamento encontrado para hoje"
+                    })
+
+                lancamentos = [{
+                    "codigo": d[0],
+                    "fornecedor": d[1],
+                    "categoria": d[2],
+                    "valor": f"R$ {formatar_valor(d[6]):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                    "status": d[8],
+                    "vencimento": d[5]
+                } for d in dados]
+
+                return jsonify({
+                    "lancamentos": lancamentos,
+                    "total": sum(formatar_valor(d[6]) for d in dados)
+                })
+
+            except Exception as e:
+                conn.close()
+                return jsonify({
+                    "error": "Erro ao consultar lançamentos",
+                    "details": str(e)
+                }), 500
+
+        # Consulta normal para HTML
         try:
-            vencimento_data = datetime.strptime(d[5], "%d/%m/%Y").date()
-        except:
-            continue
+            cursor.execute("""
+                SELECT codigo, fornecedor, categorias, centro_de_custo, tipo,
+                       vencimento, valor, valor_pago, status, plano_de_contas
+                FROM contas_a_pagar
+            """)
+            dados = cursor.fetchall()
+            conn.close()
 
-        # 🔎 Filtro especial para atrasados
-        if status == "atrasados":
-            if d[8] in ("Aberto", "Pendente", "Pago Parcialmente") and vencimento_data < hoje.date():
+            # Filtragem dos dados
+            dados_filtrados = []
+            for d in dados:
+                try:
+                    vencimento = datetime.strptime(d[5], "%d/%m/%Y").date()
+                except:
+                    continue
+
+                if status == "atrasados":
+                    if d[8] in ("Aberto", "Pendente", "Pago Parcialmente") and vencimento < hoje.date():
+                        dados_filtrados.append(d)
+                    continue
+
+                if data_inicio and vencimento < datetime.strptime(data_inicio, "%Y-%m-%d").date():
+                    continue
+                if data_fim and vencimento > datetime.strptime(data_fim, "%Y-%m-%d").date():
+                    continue
+                if status != "Todos" and d[8] != status:
+                    continue
+
                 dados_filtrados.append(d)
-            continue
 
-        # 🔎 Filtros padrão
-        if data_inicio and vencimento_data < datetime.strptime(data_inicio, "%Y-%m-%d").date():
-            continue
-        if data_fim and vencimento_data > datetime.strptime(data_fim, "%Y-%m-%d").date():
-            continue
-        if status != "Todos" and d[8] != status:
-            continue
+            # Cálculo de totais
+            totais = {
+                "total": sum(-formatar_valor(d[6]) for d in dados_filtrados),
+                "pagos": sum(formatar_valor(d[6]) for d in dados_filtrados if d[8] == "Pago"),
+                "pendentes": sum(-formatar_valor(d[6]) for d in dados_filtrados if
+                                 d[8] in ("Aberto", "Pendente", "Pago Parcialmente")),
+                "hoje": sum(-formatar_valor(d[6]) for d in dados_filtrados
+                            if datetime.strptime(d[5], "%d/%m/%Y").date() == hoje.date()),
+                "atrasados": sum(-formatar_valor(d[6]) for d in dados_filtrados
+                                 if d[8] in ("Aberto", "Pendente", "Pago Parcialmente") and
+                                 datetime.strptime(d[5], "%d/%m/%Y").date() < hoje.date())
+            }
 
-        dados_filtrados.append(d)
+            # Preparação dos dados para o template
+            lista = [{
+                "codigo": d[0],
+                "fornecedor": d[1],
+                "categoria": d[2],
+                "centro": d[3],
+                "tipo": d[4],
+                "vencimento": d[5],
+                "valor": f"R$ {formatar_valor(d[6]):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                "valor_pago": f"R$ {formatar_valor(d[7]):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                "status": d[8],
+                "plano": d[9],
+                "raw_valor": formatar_valor(d[6])
+            } for d in dados_filtrados]
 
-    # 📊 Totais com base no filtro
-    totais = {
-        "total": sum(-formatar_valor(d[6]) for d in dados_filtrados),
-        "pagos": sum(formatar_valor(d[6]) for d in dados_filtrados if d[8] == "Pago"),
-        "pendentes": sum(-formatar_valor(d[6]) for d in dados_filtrados if d[8] in ("Aberto", "Pendente", "Pago Parcialmente")),
-        "hoje": sum(-formatar_valor(d[6]) for d in dados_filtrados if d[5] == hoje.strftime("%d/%m/%Y")),
-        "atrasados": sum(-formatar_valor(d[6]) for d in dados_filtrados if
-                         d[8] in ("Aberto", "Pendente", "Pago Parcialmente") and
-                         datetime.strptime(d[5], "%d/%m/%Y").date() < hoje.date())
-    }
+            tipos_unicos = list({item["tipo"] for item in lista if item.get("tipo")})
 
-    # Lista final de lançamentos
-    lista = []
-    for d in dados_filtrados:
-        lista.append({
-            "codigo": d[0],
-            "fornecedor": d[1],
-            "categoria": d[2],
-            "centro": d[3],
-            "tipo": d[4],
-            "vencimento": d[5],
-            "valor": formatar_valor(d[6]),
-            "valor_pago": formatar_valor(d[7]),
-            "status": d[8],
-            "plano": d[9],
-            "raw_valor": d[6]
-        })
+            return render_template(
+                "contas_a_pagar.html",
+                lancamentos=lista,
+                totais=totais,
+                status=status,
+                data_inicio=data_inicio,
+                data_fim=data_fim,
+                hoje=hoje.strftime("%Y-%m-%d"),
+                tipos=tipos_unicos
+            )
 
-    # Tipos únicos extraídos da lista
-    tipos_unicos = list({item["tipo"] for item in lista if item.get("tipo")})
+        except Exception as e:
+            conn.close()
+            return render_template(
+                "contas_a_pagar.html",
+                error_message=f"Erro ao carregar dados: {str(e)}"
+            )
 
-    # Renderiza a tela
-    return render_template("contas_a_pagar.html",
-                           lancamentos=lista,
-                           totais=totais,
-                           status=status,
-                           data_inicio=data_inicio,
-                           data_fim=data_fim,
-                           hoje=hoje.strftime("%Y-%m-%d"),
-                           tipos=tipos_unicos)
+    except Exception as e:
+        return jsonify({
+            "error": "Erro interno no servidor",
+            "details": str(e)
+        }), 500
 
-
-from flask import request, redirect, url_for
-
-# ✏️ EDITAR EM MASSA (ainda sem tela, só redirecionamento)
-@contas_a_pagar_bp.route("/editar-massa", methods=["POST"])
-def editar_massa():
-    codigos = request.form.getlist("codigos")
-    print("Editar os códigos:", codigos)
-    # Futuramente redirecionar para uma tela de edição
-    return redirect("/contas-a-pagar")
-
-# 💸 BAIXAR EM MASSA
-@contas_a_pagar_bp.route("/baixar-massa", methods=["POST"])
-def baixar_massa():
-    codigos = request.form.getlist("codigos")
-    if codigos:
-        conn = sqlite3.connect("grupo_fisgar.db")
-        cursor = conn.cursor()
-        for codigo in codigos:
-            cursor.execute("UPDATE contas_a_pagar SET status = 'Pago', valor_pago = valor WHERE codigo = ?", (codigo,))
-        conn.commit()
-        conn.close()
-    return redirect("/contas-a-pagar")
-
-# 🗑️ EXCLUIR EM MASSA
-@contas_a_pagar_bp.route("/excluir-massa", methods=["POST"])
-def excluir_massa():
-    codigos = request.form.getlist("codigos")
-    if codigos:
-        conn = sqlite3.connect("grupo_fisgar.db")
-        cursor = conn.cursor()
-        cursor.executemany("DELETE FROM contas_a_pagar WHERE codigo = ?", [(c,) for c in codigos])
-        conn.commit()
-        conn.close()
-    return redirect("/contas-a-pagar")
 @contas_a_pagar_bp.route("/salvar-edicao-massa", methods=["POST"])
 def salvar_edicao_massa():
     codigos = request.form.getlist("codigos")
-    conn = sqlite3.connect("grupo_fisgar.db")
+    conn = sqlite3.connect("grupo_fisgar.db")  # Ou "grupo_fisgar - copia.db"
     cursor = conn.cursor()
 
     for codigo in codigos:
@@ -147,7 +168,6 @@ def salvar_edicao_massa():
         status = request.form.get(f"status_{codigo}", "")
         venc = request.form.get(f"vencimento_{codigo}", "")
 
-        # Formatar data para dd/mm/yyyy
         if venc:
             partes = venc.split("-")
             venc = f"{partes[2]}/{partes[1]}/{partes[0]}"
@@ -164,4 +184,74 @@ def salvar_edicao_massa():
     return redirect("/contas-a-pagar")
 
 
+# 💸 Salvar baixa em massa
+@contas_a_pagar_bp.route("/salvar-baixa-massa", methods=["POST"])
+def salvar_baixa_massa():
+    codigos_raw = request.form.get("codigos", "")
+    data_pagamento = request.form.get("dataPagamento")
+    opcao_valor = request.form.get("opcaoValor")
+    valor_informado = request.form.get("valorInformado")
+
+    if not codigos_raw or not data_pagamento:
+        return redirect("/contas-a-pagar")
+
+    codigos = codigos_raw.split(",")
+
+    conn = sqlite3.connect("grupo_fisgar.db")
+    cursor = conn.cursor()
+
+    for codigo in codigos:
+        if opcao_valor == "diferente" and valor_informado:
+            try:
+                valor_convertido = float(valor_informado.replace(",", "."))
+            except:
+                valor_convertido = 0
+            cursor.execute("""
+                UPDATE contas_a_pagar
+                SET status = 'Pago',
+                    valor_pago = ?,
+                    vencimento = ?
+                WHERE codigo = ?
+            """, (valor_convertido, data_pagamento, codigo))
+        else:
+            cursor.execute("""
+                UPDATE contas_a_pagar
+                SET status = 'Pago',
+                    valor_pago = valor,
+                    vencimento = ?
+                WHERE codigo = ?
+            """, (data_pagamento, codigo))
+
+    conn.commit()
+    conn.close()
+    return redirect("/contas-a-pagar")
+
+# 🗑️ Excluir em massa
+@contas_a_pagar_bp.route("/excluir-massa", methods=["POST"])
+def excluir_massa():
+    codigos = request.form.getlist("codigos")
+    if codigos:
+        conn = sqlite3.connect("grupo_fisgar.db")
+        cursor = conn.cursor()
+        cursor.executemany("DELETE FROM contas_a_pagar WHERE codigo = ?", [(c,) for c in codigos])
+        conn.commit()
+        conn.close()
+    return redirect("/contas-a-pagar")
+
+
+@contas_a_pagar_bp.route("/buscar-lancamento")
+def buscar_lancamento():
+    codigo = request.args.get("codigo")
+    conn = sqlite3.connect("grupo_fisgar.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM contas_a_pagar WHERE codigo = ?", (codigo,))
+    dados = cursor.fetchone()
+    conn.close()
+
+    return jsonify({
+        "codigo": dados[0],
+        "fornecedor": dados[1],
+        "valor": dados[6]
+    })
 

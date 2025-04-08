@@ -12,43 +12,35 @@
       font-family: 'Segoe UI', sans-serif;
       display: flex;
     }
-
     body.tema-escuro {
       background-color: #1e1e1e !important;
       color: white !important;
     }
-
     body.tema-escuro .form-control,
     body.tema-escuro .form-select {
       background-color: #2b2b2b !important;
       color: white !important;
       border-color: #444 !important;
     }
-
     body.tema-escuro .card-body,
     body.tema-escuro .card {
       background-color: #1e1e1e !important;
       color: white !important;
     }
-
     body.tema-escuro .btn-light {
       background-color: #444 !important;
       color: white !important;
       border: none;
     }
-
     body.tema-escuro .text-dark {
       color: white !important;
     }
-
     body.tema-escuro .bg-white {
       background-color: #1e1e1e !important;
     }
-
     body.tema-escuro .topo-fixo {
       background-color: #222 !important;
     }
-
     .menu-lateral {
       width: 220px;
       background-color: #001aff;
@@ -56,12 +48,10 @@
       min-height: 100vh;
       color: white;
     }
-
     .menu-lateral h2 {
       font-size: 18px;
       margin-bottom: 30px;
     }
-
     .menu-lateral a {
       color: white;
       text-decoration: none;
@@ -69,11 +59,9 @@
       margin-bottom: 15px;
       font-weight: bold;
     }
-
     .conteudo {
       flex: 1;
     }
-
     .topo-fixo {
       position: sticky;
       top: 0;
@@ -84,7 +72,6 @@
       align-items: center;
       z-index: 1000;
     }
-
     .topo-fixo h1 {
       margin: 0;
       font-size: 20px;
@@ -94,6 +81,7 @@
 </head>
 <body>
 
+  <!-- 📌 Menu lateral -->
   <div class="menu-lateral">
     <h2>Grupo Fisgar</h2>
     <a href="/">🏠 Dashboard</a>
@@ -103,8 +91,7 @@
   </div>
 
   <div class="conteudo">
-
-    <!-- TOPO -->
+    <!-- 📌 Cabeçalho -->
     <div class="topo-fixo d-flex justify-content-between align-items-center">
       <div class="d-flex gap-3 align-items-center">
         {% if status != 'Todos' %}
@@ -113,37 +100,55 @@
         <h1 style="margin: 0; font-size: 20px;">Contas a Pagar</h1>
       </div>
 
+      <!-- 📦 BOTÕES EM MASSA -->
       <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-white btn-sm border px-3 py-1" title="Editar selecionados">✏️ Editar em Massa</button>
-        <button type="submit" class="btn btn-white btn-sm border px-3 py-1" title="Dar baixa nos selecionados">💸 Baixar em Massa</button>
-        <button type="submit" class="btn btn-white btn-sm border px-3 py-1" onclick="return confirm('Deseja excluir os lançamentos selecionados?')" title="Excluir selecionados">🗑️ Excluir em Massa</button>
-        <button class="btn btn-sm btn-light" onclick="alternarTema()" id="botao-tema" title="Alternar tema">🌙</button>
+        <!-- ✏️ Editar -->
+        <button type="button" class="btn btn-white btn-sm border px-3 py-1"
+            onclick="abrirModalEditarMassa()">✏️ Editar em Massa</button>
+
+        <!-- 💸 Baixar -->
+        <button type="button" class="btn btn-white btn-sm border px-3 py-1"
+                title="Dar baixa nos selecionados"
+                onclick="abrirModalBaixarMassa()">
+          💸 Baixar em Massa
+        </button>
+
+        <!-- 🗑️ Excluir -->
+        <form method="POST" action="/excluir-massa" id="form-excluir-topo" onsubmit="return confirmarExclusao();">
+          <input type="hidden" name="codigos" id="codigosExcluir">
+          <button type="submit" class="btn btn-white btn-sm border px-3 py-1" title="Excluir selecionados">
+            🗑️ Excluir em Massa
+          </button>
+        </form>
+
+        <!-- 🌙 Tema -->
+        <button class="btn btn-sm btn-light" onclick="alternarTema()" id="botao-tema" title="Alternar tema">
+          🌙
+        </button>
       </div>
     </div>
 
-    <!-- FILTRO -->
+    <!-- 📆 Filtros -->
     <form method="get" class="d-flex align-items-center gap-3 py-3 px-4">
       <label for="inicio" class="mb-0">De:</label>
       <input type="date" name="inicio" id="inicio" value="{{ data_inicio }}" class="form-control form-control-sm bg-white text-dark border-secondary" style="max-width: 150px;">
-
       <label for="fim" class="mb-0">Até:</label>
       <input type="date" name="fim" id="fim" value="{{ data_fim }}" class="form-control form-control-sm bg-white text-dark border-secondary" style="max-width: 150px;">
-
       <label for="status" class="mb-0">Status:</label>
       <select name="status" id="status" class="form-select form-select-sm bg-white text-dark border-secondary" style="max-width: 180px;">
-        <option value="Todos" {% if status == 'Todos' %}selected{% endif %}>Todos</option>
-        <option value="Pago" {% if status == 'Pago' %}selected{% endif %}>Pago</option>
-        <option value="Aberto" {% if status == 'Aberto' %}selected{% endif %}>Aberto</option>
-        <option value="Pendente" {% if status == 'Pendente' %}selected{% endif %}>Pendente</option>
-        <option value="Pago Parcialmente" {% if status == 'Pago Parcialmente' %}selected{% endif %}>Pago Parcialmente</option>
-        <option value="atrasados" {% if status == 'atrasados' %}selected{% endif %}>Atrasados</option>
-        <option value="hoje" {% if status == 'hoje' %}selected{% endif %}>Hoje</option>
+        <option value="Todos" {% if status =='Todos' %}selected{% endif %}>Todos</option>
+        <option value="Pago" {% if status =='Pago' %}selected{% endif %}>Pago</option>
+        <option value="Aberto" {% if status =='Aberto' %}selected{% endif %}>Aberto</option>
+        <option value="Pendente" {% if status =='Pendente' %}selected{% endif %}>Pendente</option>
+        <option value="Pago Parcialmente" {% if status =='PagoParcialmente' %}selected{% endif %}>Pago Parcialmente</option>
+        <option value="atrasados" {% if status =='atrasados' %}selected{% endif %}>Atrasados</option>
+        <option value="hoje" {% if status =='hoje' %}selected{% endif %}>Hoje</option>
       </select>
 
       <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
     </form>
 
-    <!-- BOTÃO PDF -->
+    <!-- 📄 Botão PDF do Dia -->
     {% if status == 'hoje' %}
     <div class="px-4 pt-2 pb-3">
       <a href="/gerar-pdf-hoje" class="btn btn-outline-dark btn-sm">
@@ -152,247 +157,657 @@
     </div>
     {% endif %}
 
-    <!-- CARDS -->
-    <div class="row g-3 mx-4 mb-4">
-      {% set cores = {'total': 'primary', 'pagos': 'primary', 'pendentes': 'primary', 'hoje': 'primary', 'atrasados': 'danger'} %}
-      {% for chave, valor in totais.items() %}
-        <div class="col-md-2 col-sm-4 col-6">
-          {% if chave in ['atrasados', 'hoje'] %}
-          <a href="/contas-a-pagar?status={{ chave }}" style="text-decoration: none;">
-          {% endif %}
-            <div class="card border border-{{ cores[chave] }} border-2 rounded-4 shadow-sm overflow-hidden"
-                 style="background-color: #ffffff; min-height: 100px; transition: 0.2s ease-in-out;"
-                 onmouseover="this.style.transform='scale(1.02)'"
-                 onmouseout="this.style.transform='scale(1)'">
-              <div class="bg-{{ cores[chave] }} text-white py-1 px-2 text-center" style="font-size: 0.8rem;">
-                {{ chave | capitalize }}
-              </div>
-              <div class="card-body d-flex align-items-center justify-content-center fs-5 text-dark">
-                {{ (valor * -1) | formatar }}
-              </div>
-            </div>
-          {% if chave in ['atrasados', 'hoje'] %}
-          </a>
-          {% endif %}
+    <!-- 📊 Cards -->
+<div class="row g-3 mx-4 mb-4">
+  {% set cores = {'total': 'primary', 'pagos': 'success', 'pendentes': 'warning', 'hoje': 'info', 'atrasados': 'danger'} %}
+  {% for chave, valor in totais.items() %}
+    <div class="col-md-2 col-sm-4 col-6">
+      {% if chave == 'atrasados' %}
+        <a href="/contas-a-pagar?status={{ chave }}" style="text-decoration: none;">
+      {% endif %}
+
+      <div class="card border border-{{ cores[chave] }} border-2 rounded-4 shadow-sm overflow-hidden"
+           style="background-color: #ffffff; min-height: 100px; transition: 0.2s ease-in-out; cursor: pointer;"
+           onmouseover="this.style.transform='scale(1.02)'"
+           onmouseout="this.style.transform='scale(1)'"
+           {% if chave == 'hoje' %}onclick="abrirModalLancamentosHoje()"{% endif %}>
+        <div class="bg-{{ cores[chave] }} text-white py-1 px-2 text-center" style="font-size: 0.8rem;">
+          {{ chave | capitalize }}
         </div>
-      {% endfor %}
+        <div class="card-body d-flex align-items-center justify-content-center fs-5 text-dark">
+          {{ (valor * -1) | formatar }}
+        </div>
+      </div>
+
+      {% if chave == 'atrasados' %}
+        </a>
+      {% endif %}
     </div>
-{% if tipos %}
-<div class="mx-4 mb-3">
-  <label class="fw-bold">Tipos de lançamentos encontrados:</label>
-  <div class="d-flex flex-wrap gap-2 mt-2">
-    {% for t in tipos %}
-      <span class="badge rounded-pill bg-light border text-dark px-3 py-2">
-        {{ t }}
-      </span>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-<!-- 🔒 Cabeçalho fixo da listagem -->
-<div class="mx-4 sticky-top bg-white py-2 border-bottom text-muted small" style="z-index: 10;">
-  <div class="d-flex gap-3 ps-2 fw-bold text-uppercase">
-    <div style="width: 30px;"></div>
-    <div style="width: 180px;">[Fornecedor]</div>
-    <div style="width: 160px;">[Categoria]</div>
-    <div style="width: 200px;">[Plano de Contas]</div>
-    <div style="width: 160px;">[Centro de Custo]</div>
-    <div style="width: 120px;">Vencimento</div>
-    <div style="width: 120px;">Previsto</div>
-    <div style="width: 120px;">Pago</div>
-    <div style="width: 100px;">Status</div>
-    <div style="width: 110px;">Ações</div>
-  </div>
-</div>
-
-<!-- 🧾 Listagem com checkbox + botões -->
-<form method="post">
-  {% for item in lancamentos %}
-  <div class="border border-primary rounded-4 d-flex align-items-center px-3 py-2 mb-2 mx-4 bg-white text-dark small">
-    <div class="d-flex align-items-center gap-3 w-100">
-
-      <!-- ✅ Checkbox -->
-      <div style="width: 30px;">
-        <input type="checkbox" name="codigos" value="{{ item.codigo }}">
-      </div>
-
-      <div style="width: 180px;">
-        <span style="color: #007bff;">[</span>{{ item.fornecedor }}<span style="color: #007bff;">]</span>
-      </div>
-
-      <div style="width: 160px;">
-        <span style="color: #6610f2;">[</span>{{ item.categoria }}<span style="color: #6610f2;">]</span>
-      </div>
-
-      <div style="width: 200px;">
-        <span style="color: #198754;">[</span>{{ item.plano }}<span style="color: #198754;">]</span>
-      </div>
-
-      <div style="width: 160px;">
-        <span style="color: #fd7e14;">[</span>{{ item.centro }}<span style="color: #fd7e14;">]</span>
-      </div>
-
-      <div style="width: 120px;">
-        {{ item.vencimento }}
-      </div>
-
-      <div style="width: 120px;">
-        <strong>{{ item.valor | formatar }}</strong>
-      </div>
-
-      <div style="width: 120px;">
-        {{ item.valor_pago | formatar }}
-      </div>
-
-      <div style="width: 100px;">
-        <span class="badge
-          {% if item.status == 'Pago' %}bg-success
-          {% elif item.status == 'Aberto' %}bg-warning text-dark
-          {% elif item.status == 'Atrasado' %}bg-danger
-          {% else %}bg-secondary{% endif %}">
-          {{ item.status }}
-        </span>
-      </div>
-
-      <!-- 🎯 Botões por lançamento -->
-      <div class="d-flex flex-row gap-2" style="width: 110px;">
-        <button class="btn btn-outline-warning btn-sm px-2 py-1" title="Editar lançamento">✏️</button>
-        <button class="btn btn-outline-info btn-sm px-2 py-1" title="Dar baixa">💸</button>
-        <button class="btn btn-outline-danger btn-sm px-2 py-1" title="Excluir lançamento" onclick="return confirm('Excluir este lançamento?')">🗑️</button>
-      </div>
-
-    </div>
-  </div>
   {% endfor %}
-</form>
-
-
-
-  </div>
-
-  <!-- SCRIPT -->
-  <script>
-    function alternarTema() {
-      const body = document.body;
-      const btn = document.getElementById('botao-tema');
-      const modoAtual = body.classList.toggle('tema-escuro');
-      if (body.classList.contains('tema-escuro')) {
-        btn.innerText = '☀️';
-        localStorage.setItem('tema', 'escuro');
-      } else {
-        btn.innerText = '🌙';
-        localStorage.setItem('tema', 'claro');
-      }
-    }
-
-    window.onload = () => {
-      const tema = localStorage.getItem('tema');
-      const body = document.body;
-      const btn = document.getElementById('botao-tema');
-      if (tema === 'escuro') {
-        body.classList.add('tema-escuro');
-        if (btn) btn.innerText = '☀️';
-      }
-    }
-  </script>
-<!-- ✅ BOTÃO DE AÇÃO EM MASSA - EDITAR -->
-<div class="d-flex justify-content-end gap-2 px-4 mt-3">
-  <button type="button" class="btn btn-white btn-sm border px-3 py-1" title="Editar selecionados" onclick="abrirModalEditarMassa()">✏️ Editar em Massa</button>
 </div>
 
-<!-- ✅ MODAL EDITAR EM MASSA -->
-<div class="modal fade" id="modalEditarMassa" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title">Editar Lote Selecionado</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- 🏷️ Tipos de Lançamento -->
+    {% if tipos %}
+    <div class="mx-4 mb-3">
+      <label class="fw-bold">Tipos de lançamentos encontrados:</label>
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        {% for t in tipos %}
+          <span class="badge rounded-pill bg-light border text-dark px-3 py-2">
+            {{ t }}
+          </span>
+        {% endfor %}
       </div>
-      <form method="POST" action="/salvar-edicao-massa">
-        <div class="modal-body">
-          <table class="table table-sm table-bordered align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Código</th>
-                <th>Fornecedor</th>
-                <th>Categoria</th>
-                <th>Plano</th>
-                <th>Centro</th>
-                <th>Valor</th>
-                <th>Status</th>
-                <th>Vencimento</th>
-              </tr>
-            </thead>
-            <tbody id="tabela-edicao"></tbody>
-          </table>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Salvar Alterações</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        </div>
-      </form>
     </div>
-  </div>
-</div>
+    {% endif %}
 
-<!-- ✅ SCRIPTS DO MODAL -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function abrirModalEditarMassa() {
-  const selecionados = Array.from(document.querySelectorAll('input[name="codigos"]:checked'));
-  if (selecionados.length === 0) {
-    alert('Selecione ao menos um lançamento para editar.');
-    return;
-  }
+    <!-- 🧾 Cabeçalho fixo -->
+    <div class="mx-4 sticky-top bg-white py-2 border-bottom text-muted small" style="z-index: 10;">
+      <div class="d-flex gap-3 ps-2 fw-bold text-uppercase">
+        <div style="width: 30px;"></div>
+        <div style="width: 180px;">[Fornecedor]</div>
+        <div style="width: 160px;">[Categoria]</div>
+        <div style="width: 200px;">[Plano de Contas]</div>
+        <div style="width: 160px;">[Centro de Custo]</div>
+        <div style="width: 120px;">Vencimento</div>
+        <div style="width: 120px;">Previsto</div>
+        <div style="width: 120px;">Pago</div>
+        <div style="width: 100px;">Status</div>
+        <div style="width: 110px;">Ações</div>
+      </div>
+    </div>
 
+    <!-- 🧾 Listagem de lançamentos -->
+    <form method="POST" action="/excluir-massa" id="form-excluir" onsubmit="return confirmarExclusao();">
+      {% for item in lancamentos %}
+      <div class="border border-primary rounded-4 d-flex align-items-center px-3 py-2 mb-2 mx-4 bg-white text-dark small">
+        <div class="d-flex align-items-center gap-3 w-100">
+
+          <div style="width: 30px;">
+            <input type="checkbox" name="codigos" value="{{ item.codigo }}">
+          </div>
+
+          <div style="width: 180px;"><span style="color: #007bff;">[</span>{{ item.fornecedor }}<span style="color: #007bff;">]</span></div>
+          <div style="width: 160px;"><span style="color: #6610f2;">[</span>{{ item.categoria }}<span style="color: #6610f2;">]</span></div>
+          <div style="width: 200px;"><span style="color: #198754;">[</span>{{ item.plano }}<span style="color: #198754;">]</span></div>
+          <div style="width: 160px;"><span style="color: #fd7e14;">[</span>{{ item.centro }}<span style="color: #fd7e14;">]</span></div>
+
+          <div style="width: 120px;">{{ item.vencimento }}</div>
+          <div style="width: 120px;"><strong>{{ item.valor | formatar }}</strong></div>
+          <div style="width: 120px;">{{ item.valor_pago | formatar }}</div>
+
+          <div style="width: 100px;">
+            <span class="badge
+              {% if item.status == 'Pago' %}bg-success
+              {% elif item.status == 'Aberto' %}bg-warning text-dark
+              {% elif item.status == 'Atrasado' %}bg-danger
+              {% else %}bg-secondary{% endif %}">
+              {{ item.status }}
+            </span>
+          </div>
+
+          <!-- 🛠️ Botões individuais -->
+<div class="d-flex flex-row gap-2" style="width: 110px;">
+  <!-- ✏️ Editar -->
+  <button class="btn btn-outline-warning btn-sm px-2 py-1"
+          type="button"
+          title="Editar"
+          onclick="abrirModalEditar('{{ item.codigo }}')">
+    ✏️
+  </button>
+
+  <!-- 💸 Dar Baixa -->
+  <button class="btn btn-outline-info btn-sm px-2 py-1"
+          type="button"
+          title="Dar baixa"
+          onclick="abrirModalBaixar('{{ item.codigo }}')">
+    💸
+  </button>
+
+  <!-- 🗑️ Excluir -->
+  <button class="btn btn-outline-danger btn-sm px-2 py-1"
+          type="button"
+          title="Excluir"
+          onclick="confirmarExclusaoIndividual('{{ item.codigo }}')">
+    🗑️
+  </button>
+</div>>
+
+        </div>
+      </div>
+      {% endfor %}
+    </form>
+
+    <!-- ✏️ MODAL – Edição em Massa -->
+    <div class="modal fade" id="modalEditarMassa" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title">Editar Lançamentos</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="POST" action="/salvar-edicao-massa">
+            <div class="modal-body">
+              <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Código</th>
+                    <th>Fornecedor</th>
+                    <th>Categoria</th>
+                    <th>Plano</th>
+                    <th>Centro</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Vencimento</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-edicao"></tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success">Salvar Alterações</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💸 MODAL – Baixar em Massa -->
+    <div class="modal fade" id="modalBaixarMassa" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-info text-white">
+            <h5 class="modal-title">Baixar Lançamentos</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="POST" action="/baixar-massa">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="dataPagamento" class="form-label">Data do Pagamento</label>
+                <input type="date" class="form-control" id="dataPagamento" name="data_pagamento" required>
+              </div>
+              <div class="mb-3">
+                <label for="valorPago" class="form-label">Valor Pago</label>
+                <input type="number" step="0.01" class="form-control" id="valorPago" name="valor_pago" required>
+              </div>
+              <div id="lista-codigos-baixa"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success">Confirmar Baixa</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      function alternarTema() {
+        const body = document.body;
+        const btn = document.getElementById('botao-tema');
+        const temaEscuro = body.classList.toggle('tema-escuro');
+        if (temaEscuro) {
+          btn.innerText = '☀️';
+          localStorage.setItem('tema', 'escuro');
+        } else {
+          btn.innerText = '🌙';
+          localStorage.setItem('tema', 'claro');
+        }
+      }
+
+      window.onload = () => {
+        const tema = localStorage.getItem('tema');
+        const body = document.body;
+        const btn = document.getElementById('botao-tema');
+        if (tema === 'escuro') {
+          body.classList.add('tema-escuro');
+          if (btn) btn.innerText = '☀️';
+        }
+      }
+
+      function confirmarExclusao() {
+        const selecionados = document.querySelectorAll('input[name="codigos"]:checked');
+        if (selecionados.length === 0) {
+          alert('Selecione ao menos um lançamento para excluir.');
+          return false;
+        }
+        return confirm(`Deseja realmente excluir ${selecionados.length} lançamento(s)?`);
+      }
+
+      function abrirModalEditarMassa() {
+        const selecionados = Array.from(document.querySelectorAll('input[name="codigos"]:checked'));
+        if (selecionados.length === 0) {
+          alert('Selecione ao menos um lançamento para editar.');
+          return;
+        }
+
+        const tabela = document.getElementById("tabela-edicao");
+        tabela.innerHTML = "";
+
+        selecionados.forEach(input => {
+          const codigo = input.value;
+          const linha = input.closest('.d-flex');
+          const colunas = linha.querySelectorAll('div');
+          const fornecedor = colunas[1].innerText.trim().replace('[','').replace(']','');
+          const categoria = colunas[2].innerText.trim().replace('[','').replace(']','');
+          const plano = colunas[3].innerText.trim().replace('[','').replace(']','');
+          const centro = colunas[4].innerText.trim().replace('[','').replace(']','');
+          const vencimento = colunas[5].innerText.trim();
+          const valor = colunas[6].innerText.trim().replace('R$','').replaceAll('.','').replace(',','.');
+          const status = colunas[8].innerText.trim();
+
+          tabela.innerHTML += `
+            <tr>
+              <td><input type="hidden" name="codigos" value="${codigo}">${codigo}</td>
+              <td><input type="text" class="form-control form-control-sm" name="fornecedor_${codigo}" value="${fornecedor}"></td>
+              <td><input type="text" class="form-control form-control-sm" name="categoria_${codigo}" value="${categoria}"></td>
+              <td><input type="text" class="form-control form-control-sm" name="plano_${codigo}" value="${plano}"></td>
+              <td><input type="text" class="form-control form-control-sm" name="centro_${codigo}" value="${centro}"></td>
+              <td><input type="number" step="0.01" class="form-control form-control-sm" name="valor_${codigo}" value="${valor}"></td>
+              <td>
+                <select class="form-select form-select-sm" name="status_${codigo}">
+                  <option ${status === 'Aberto' ? 'selected' : ''}>Aberto</option>
+                  <option ${status === 'Pago' ? 'selected' : ''}>Pago</option>
+                  <option ${status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                  <option ${status === 'Pago Parcialmente' ? 'selected' : ''}>Pago Parcialmente</option>
+                </select>
+              </td>
+              <td><input type="date" class="form-control form-control-sm" name="vencimento_${codigo}" value="${formatarData(vencimento)}"></td>
+            </tr>
+          `;
+        });
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarMassa'));
+        modal.show();
+      }
+
+      function abrirModalBaixarMassa() {
+        const selecionados = Array.from(document.querySelectorAll('input[name="codigos"]:checked'));
+        if (selecionados.length === 0) {
+          alert('Selecione ao menos um lançamento para baixar.');
+          return;
+        }
+
+        const listaCodigos = document.getElementById("lista-codigos-baixa");
+        listaCodigos.innerHTML = "";
+
+        selecionados.forEach(input => {
+          const codigo = input.value;
+          listaCodigos.innerHTML += `<input type="hidden" name="codigos" value="${codigo}">`;
+        });
+
+        const modal = new bootstrap.Modal(document.getElementById('modalBaixarMassa'));
+        modal.show();
+      }
+
+      function formatarData(dataBR) {
+        const partes = dataBR.split("/");
+        return `${partes[2]}-${partes[1]}-${partes[0]}`;
+      }
+      // 🔄 Função para editar UM lançamento
+function abrirModalEditar(codigo) {
+  // Encontra a linha do lançamento pelo código
+  const linha = document.querySelector(`input[value="${codigo}"]`).closest('.d-flex');
+  const colunas = linha.querySelectorAll('div');
+
+  // Pega os dados do lançamento
+  const fornecedor = colunas[1].innerText.trim().replace('[','').replace(']','');
+  const categoria = colunas[2].innerText.trim().replace('[','').replace(']','');
+  const plano = colunas[3].innerText.trim().replace('[','').replace(']','');
+  const centro = colunas[4].innerText.trim().replace('[','').replace(']','');
+  const vencimento = colunas[5].innerText.trim();
+  const valor = colunas[6].innerText.trim().replace('R$','').replaceAll('.','').replace(',','.');
+  const status = colunas[8].innerText.trim();
+
+  // Preenche o modal de edição (usando o mesmo modal da edição em massa)
   const tabela = document.getElementById("tabela-edicao");
-  tabela.innerHTML = "";
+  tabela.innerHTML = `
+    <tr>
+      <td><input type="hidden" name="codigos" value="${codigo}">${codigo}</td>
+      <td><input type="text" class="form-control form-control-sm" name="fornecedor_${codigo}" value="${fornecedor}"></td>
+      <td><input type="text" class="form-control form-control-sm" name="categoria_${codigo}" value="${categoria}"></td>
+      <td><input type="text" class="form-control form-control-sm" name="plano_${codigo}" value="${plano}"></td>
+      <td><input type="text" class="form-control form-control-sm" name="centro_${codigo}" value="${centro}"></td>
+      <td><input type="number" step="0.01" class="form-control form-control-sm" name="valor_${codigo}" value="${valor}"></td>
+      <td>
+        <select class="form-select form-select-sm" name="status_${codigo}">
+          <option ${status === 'Aberto' ? 'selected' : ''}>Aberto</option>
+          <option ${status === 'Pago' ? 'selected' : ''}>Pago</option>
+          <option ${status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+          <option ${status === 'Pago Parcialmente' ? 'selected' : ''}>Pago Parcialmente</option>
+        </select>
+      </td>
+      <td><input type="date" class="form-control form-control-sm" name="vencimento_${codigo}" value="${formatarData(vencimento)}"></td>
+    </tr>
+  `;
 
-  selecionados.forEach(input => {
-    const codigo = input.value;
-    const linha = input.closest('.d-flex');
-    const colunas = linha.querySelectorAll('div');
-    const fornecedor = colunas[1]?.innerText.trim().replace('[','').replace(']','') || "";
-    const categoria = colunas[2]?.innerText.trim().replace('[','').replace(']','') || "";
-    const plano = colunas[3]?.innerText.trim().replace('[','').replace(']','') || "";
-    const centro = colunas[4]?.innerText.trim().replace('[','').replace(']','') || "";
-    const vencimento = colunas[5]?.innerText.trim() || "";
-    const valor = colunas[6]?.innerText.trim().replace('R$','').replaceAll('.','').replace(',','.') || "";
-    const status = colunas[8]?.innerText.trim() || "";
-
-    tabela.innerHTML += `
-      <tr>
-        <td><input type="hidden" name="codigos" value="${codigo}">${codigo}</td>
-        <td><input type="text" class="form-control form-control-sm" name="fornecedor_${codigo}" value="${fornecedor}"></td>
-        <td><input type="text" class="form-control form-control-sm" name="categoria_${codigo}" value="${categoria}"></td>
-        <td><input type="text" class="form-control form-control-sm" name="plano_${codigo}" value="${plano}"></td>
-        <td><input type="text" class="form-control form-control-sm" name="centro_${codigo}" value="${centro}"></td>
-        <td><input type="number" step="0.01" class="form-control form-control-sm" name="valor_${codigo}" value="${valor}"></td>
-        <td>
-          <select class="form-select form-select-sm" name="status_${codigo}">
-            <option ${status === 'Aberto' ? 'selected' : ''}>Aberto</option>
-            <option ${status === 'Pago' ? 'selected' : ''}>Pago</option>
-            <option ${status === 'Pendente' ? 'selected' : ''}>Pendente</option>
-            <option ${status === 'Pago Parcialmente' ? 'selected' : ''}>Pago Parcialmente</option>
-          </select>
-        </td>
-        <td><input type="date" class="form-control form-control-sm" name="vencimento_${codigo}" value="${formatarData(vencimento)}"></td>
-      </tr>
-    `;
-  });
-
+  // Abre o modal
   const modal = new bootstrap.Modal(document.getElementById('modalEditarMassa'));
   modal.show();
 }
 
-function formatarData(dataBR) {
-  const partes = dataBR.split("/");
-  if (partes.length === 3) {
-    return `${partes[2]}-${partes[1]}-${partes[0]}`;
-  }
-  return "";
+// 💰 Função para dar baixa em UM lançamento
+function abrirModalBaixar(codigo) {
+  // Preenche o modal de baixa (usando o mesmo modal da baixa em massa)
+  const listaCodigos = document.getElementById("lista-codigos-baixa");
+  listaCodigos.innerHTML = `<input type="hidden" name="codigos" value="${codigo}">`;
+
+  // Abre o modal
+  const modal = new bootstrap.Modal(document.getElementById('modalBaixarMassa'));
+  modal.show();
 }
+
+// ❌ Função para excluir UM lançamento
+function confirmarExclusaoIndividual(codigo) {
+  if (confirm('Deseja realmente excluir este lançamento?')) {
+    // Cria um formulário temporário para enviar o código
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/excluir-massa';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'codigos';
+    input.value = codigo;
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+      function abrirModalLancamentosHoje() {
+  // Busca os lançamentos do dia via AJAX
+  fetch('/contas-a-pagar?status=hoje&json=1')
+    .then(response => response.json())
+    .then(data => {
+      const tbody = document.getElementById('lista-lancamentos-hoje');
+      tbody.innerHTML = '';
+
+      data.lancamentos.forEach(item => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.fornecedor}</td>
+            <td>${item.categoria}</td>
+            <td>${item.valor}</td>
+            <td>
+              <span class="badge ${getBadgeClass(item.status)}">
+                ${item.status}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-outline-warning btn-sm"
+                      onclick="abrirModalEditar('${item.codigo}')">✏️</button>
+              <button class="btn btn-outline-info btn-sm"
+                      onclick="abrirModalBaixar('${item.codigo}')">💸</button>
+              <button class="btn btn-outline-danger btn-sm"
+                      onclick="confirmarExclusaoIndividual('${item.codigo}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      const modal = new bootstrap.Modal(document.getElementById('modalLancamentosHoje'));
+      modal.show();
+    })
+    .catch(error => {
+      console.error('Erro:', error);
+      alert('Não foi possível carregar os lançamentos do dia');
+    });
+}
+
+function getBadgeClass(status) {
+  switch(status) {
+    case 'Pago': return 'bg-success';
+    case 'Aberto': return 'bg-warning text-dark';
+    case 'Atrasado': return 'bg-danger';
+    default: return 'bg-secondary';
+  }
+}
+    </script>
+
+       <!-- Modal Lançamentos do Dia -->
+<div class="modal fade" id="modalLancamentosHoje" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-primary border-2 rounded-4">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fs-5 fw-bold">
+          <i class="bi bi-calendar-day me-2"></i>
+          Lançamentos do Dia - Total: <span id="total-hoje" class="fw-bold"></span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light sticky-top">
+              <tr class="text-uppercase small">
+                <th class="ps-3" style="width: 25%">Fornecedor</th>
+                <th style="width: 20%">Categoria</th>
+                <th style="width: 15%">Valor</th>
+                <th style="width: 15%">Status</th>
+                <th style="width: 25%">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="lista-lancamentos-hoje" class="border-top-0"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i> Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-warning border-2 rounded-4">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title fs-5 fw-bold">
+          <i class="bi bi-pencil-square me-2"></i>
+          Editar Lançamento
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body" id="conteudo-edicao">
+        <!-- Conteúdo será preenchido via JavaScript -->
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-success rounded-3" onclick="salvarEdicao()">
+          <i class="bi bi-check-lg me-1"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Função para abrir modal de lançamentos do dia
+  function abrirModalLancamentosHoje() {
+    fetch('/contas-a-pagar?status=hoje&json=1')
+      .then(response => {
+        if (!response.ok) throw new Error('Erro no servidor');
+        return response.json();
+      })
+      .then(data => {
+        const tbody = document.getElementById('lista-lancamentos-hoje');
+        const totalHoje = document.getElementById('total-hoje');
+
+        tbody.innerHTML = '';
+        totalHoje.textContent = data.total.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        });
+
+        if (data.lancamentos && data.lancamentos.length > 0) {
+          data.lancamentos.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${item.fornecedor}</td>
+              <td>${item.categoria}</td>
+              <td>${item.valor}</td>
+              <td><span class="badge ${getBadgeClass(item.status)}">${item.status}</span></td>
+              <td>
+                <button class="btn btn-outline-warning btn-sm"
+                        onclick="abrirModalEditar('${item.codigo}')"
+                        title="Editar">
+                  ✏️
+                </button>
+                <button class="btn btn-outline-info btn-sm"
+                        onclick="abrirModalBaixar('${item.codigo}')"
+                        title="Dar baixa">
+                  💸
+                </button>
+                <button class="btn btn-outline-danger btn-sm"
+                        onclick="confirmarExclusaoIndividual('${item.codigo}')"
+                        title="Excluir">
+                  🗑️
+                </button>
+              </td>
+            `;
+            tbody.appendChild(row);
+          });
+        } else {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">
+                <i class="bi bi-calendar-x fs-4"></i>
+                <div class="mt-2">Nenhum lançamento para hoje</div>
+              </td>
+            </tr>
+          `;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalLancamentosHoje'));
+        modal.show();
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao carregar lançamentos do dia: ' + error.message);
+      });
+  }
+
+  // Função para abrir modal de edição
+  function abrirModalEditar(codigo) {
+    // Fecha o modal atual primeiro
+    const modalHoje = bootstrap.Modal.getInstance(document.getElementById('modalLancamentosHoje'));
+    if (modalHoje) {
+      modalHoje.hide();
+
+      // Espera o modal fechar completamente antes de abrir o novo
+      document.getElementById('modalLancamentosHoje').addEventListener('hidden.bs.modal', function() {
+        buscarDadosEdicao(codigo);
+      }, {once: true});
+    } else {
+      buscarDadosEdicao(codigo);
+    }
+  }
+
+  function buscarDadosEdicao(codigo) {
+    fetch(`/buscar-lancamento?codigo=${codigo}`)
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('conteudo-edicao').innerHTML = `
+          <form id="formEditar">
+            <input type="hidden" name="codigo" value="${data.codigo}">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Fornecedor</label>
+                <input type="text" class="form-control" name="fornecedor" value="${data.fornecedor}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Valor</label>
+                <input type="text" class="form-control" name="valor" value="${data.valor}" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Status</label>
+              <select class="form-select" name="status" required>
+                <option value="Aberto" ${data.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
+                <option value="Pago" ${data.status === 'Pago' ? 'selected' : ''}>Pago</option>
+                <option value="Pendente" ${data.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+              </select>
+            </div>
+          </form>
+        `;
+
+        const modalEditar = new bootstrap.Modal(document.getElementById('modalEditar'));
+        modalEditar.show();
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao carregar dados para edição');
+      });
+  }
+
+  // Função auxiliar para classes de status
+  function getBadgeClass(status) {
+    if (!status) return 'bg-secondary';
+
+    switch(status.toLowerCase()) {
+      case 'pago': return 'bg-success';
+      case 'aberto': return 'bg-warning text-dark';
+      case 'pendente': return 'bg-warning text-dark';
+      case 'pago parcialmente': return 'bg-info text-dark';
+      case 'atrasado': return 'bg-danger';
+      default: return 'bg-secondary';
+    }
+  }
+
+  // Suas outras funções existentes (confirmarExclusaoIndividual, abrirModalBaixar, etc.)
+  // ... mantenha as outras funções que você já tem ...
 </script>
 
-</body>
+function salvarEdicao() {
+  const form = document.getElementById('formEditar');
+  const formData = new FormData(form);
+
+  fetch('/salvar-edicao', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    // Fecha o modal de edição
+    const modalEditar = bootstrap.Modal.getInstance(document.getElementById('modalEditar'));
+    modalEditar.hide();
+
+    // Mostra mensagem personalizada
+    document.getElementById('toastMessage').textContent = data.message || "Salvo com sucesso!";
+    const toast = new bootstrap.Toast(document.getElementById('toastSucesso'));
+    toast.show();
+
+    // Atualiza a lista (opcional)
+    abrirModalLancamentosHoje();
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    document.getElementById('toastMessage').textContent = "Erro ao salvar!";
+    const toast = new bootstrap.Toast(document.getElementById('toastSucesso'));
+    toast.show();
+  });
+}
+    <!-- Toast de Sucesso (cole ANTES do </body>) -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="toastSucesso" class="toast align-items-center text-bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <span id="toastMessage">Operação concluída com sucesso!</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+    </script>
+  </body>
 </html>
