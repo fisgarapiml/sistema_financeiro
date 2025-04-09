@@ -16,8 +16,15 @@ def formatar_valor(valor):
 def contas_a_pagar():
     try:
         status = request.args.get("status", "Todos")
-        data_inicio = request.args.get("inicio")
-        data_fim = request.args.get("fim")
+        from calendar import monthrange
+
+        hoje = datetime.today()
+        mes_atual = hoje.month
+        ano_atual = hoje.year
+
+        data_inicio = request.args.get("inicio") or f"{ano_atual}-{mes_atual:02d}-01"
+        data_fim = request.args.get("fim") or f"{ano_atual}-{mes_atual:02d}-{monthrange(ano_atual, mes_atual)[1]}"
+
         formato_json = request.args.get("json") == "1"
         hoje = datetime.today()
         data_hoje_str = hoje.strftime("%d/%m/%Y")
@@ -25,6 +32,16 @@ def contas_a_pagar():
         # Conexão com o banco
         conn = sqlite3.connect("grupo_fisgar.db")
         cursor = conn.cursor()
+
+        # 🔍 Cálculo separado para o card "Atrasados" (valor real direto do banco)
+        cursor.execute("""
+            SELECT valor
+            FROM contas_a_pagar
+            WHERE status IN ('Aberto', 'Pendente', 'Pago Parcialmente')
+              AND vencimento < ?
+        """, (data_hoje_str,))
+        valores_atrasados = [formatar_valor(row[0]) for row in cursor.fetchall()]
+        total_atrasado = -sum(valores_atrasados)
 
         # Consulta para JSON (lançamentos do dia)
         if formato_json and status == "hoje":
@@ -81,25 +98,25 @@ def contas_a_pagar():
             dados_filtrados = []
             for d in dados:
                 try:
-                    vencimento = datetime.strptime(d[5], "%d/%m/%Y").date()
+                    vencimento = datetime.strptime(d[5].strip(), "%d/%m/%Y").date()
                 except:
                     continue
 
                 if status == "atrasados":
-                    if d[8] in ("Aberto", "Pendente", "Pago Parcialmente") and vencimento < hoje.date():
-                        dados_filtrados.append(d)
-                    continue
+                    if d[8] not in ("Aberto", "Pendente", "Pago Parcialmente") or vencimento >= hoje.date():
+                        continue
 
                 if data_inicio and vencimento < datetime.strptime(data_inicio, "%Y-%m-%d").date():
                     continue
                 if data_fim and vencimento > datetime.strptime(data_fim, "%Y-%m-%d").date():
                     continue
-                if status != "Todos" and d[8] != status:
+                if status != "Todos" and status != "atrasados" and d[8] != status:
                     continue
 
                 dados_filtrados.append(d)
 
             # Cálculo de totais
+
             totais = {
                 "total": sum(-formatar_valor(d[6]) for d in dados_filtrados),
                 "pagos": sum(formatar_valor(d[6]) for d in dados_filtrados if d[8] == "Pago"),

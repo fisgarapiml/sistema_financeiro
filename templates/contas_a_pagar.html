@@ -767,35 +767,7 @@ function getBadgeClass(status) {
   // ... mantenha as outras funções que você já tem ...
 </script>
 
-function salvarEdicao() {
-  const form = document.getElementById('formEditar');
-  const formData = new FormData(form);
 
-  fetch('/salvar-edicao', {
-    method: 'POST',
-    body: formData
-  })
-  .then(response => response.json())
-  .then(data => {
-    // Fecha o modal de edição
-    const modalEditar = bootstrap.Modal.getInstance(document.getElementById('modalEditar'));
-    modalEditar.hide();
-
-    // Mostra mensagem personalizada
-    document.getElementById('toastMessage').textContent = data.message || "Salvo com sucesso!";
-    const toast = new bootstrap.Toast(document.getElementById('toastSucesso'));
-    toast.show();
-
-    // Atualiza a lista (opcional)
-    abrirModalLancamentosHoje();
-  })
-  .catch(error => {
-    console.error('Erro:', error);
-    document.getElementById('toastMessage').textContent = "Erro ao salvar!";
-    const toast = new bootstrap.Toast(document.getElementById('toastSucesso'));
-    toast.show();
-  });
-}
     <!-- Toast de Sucesso (cole ANTES do </body>) -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
   <div id="toastSucesso" class="toast align-items-center text-bg-success border-0" role="alert">
