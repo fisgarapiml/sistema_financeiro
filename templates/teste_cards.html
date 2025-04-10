@@ -1,138 +1,374 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Indicadores Financeiros</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Finance | Controle Financeiro</title>
+
+    <!-- Fontes & Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
     <style>
+        :root {
+            --primary: #0066ff;
+            --primary-light: rgba(0, 102, 255, 0.1);
+            --accent: #00ffaa;
+            --text: #2b2d42;
+            --bg: #f8faff;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-shadow: 0 4px 20px rgba(0, 102, 255, 0.08);
+            --status-paid: #00c853;
+            --status-pending: #ffab00;
+            --status-overdue: #ff3d00;
+        }
+
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f8f9fa;
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
             margin: 0;
-            padding: 30px;
-        }
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .card {
-            flex: 1 1 250px;
-            background: white;
-            border-left: 6px solid #00B894;
-            border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            min-height: 100vh;
         }
-        .card.red { border-color: #d63031; }
-        .card.blue { border-color: #0984e3; }
-        .card.yellow { border-color: #fdcb6e; }
-        .card.green { border-color: #00b894; }
-        .card h3 {
-            margin-top: 0;
-            font-size: 16px;
-            color: #636e72;
+
+        /* Layout Principal */
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
         }
-        .card p {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 5px 0 0;
+
+        /* Cabeçalho */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
+        }
+
+        /* Filtro por Data */
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-filter input, .date-filter button {
+            padding: 8px 15px;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            font-family: inherit;
+        }
+
+        .date-filter button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .date-filter button:hover {
+            background: #0052cc;
+        }
+
+        /* Cards em Linha */
+        .cards-row {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            min-width: 220px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 102, 255, 0.12);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-light);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text);
+        }
+
+        .card-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Space Grotesk', monospace;
+        }
+
+        /* Lista de Lançamentos */
+        .transactions-list {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .transaction {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 100px 120px;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .transaction:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-cell {
+            padding: 0 10px;
+        }
+
+        .transaction-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-paid {
+            background: rgba(0, 200, 83, 0.1);
+            color: var(--status-paid);
+        }
+
+        .status-pending {
+            background: rgba(255, 171, 0, 0.1);
+            color: var(--status-pending);
+        }
+
+        .status-overdue {
+            background: rgba(255, 61, 0, 0.1);
+            color: var(--status-overdue);
+        }
+
+        .transaction-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .action-btn.delete {
+            background: rgba(255, 61, 0, 0.1);
+            color: var(--status-overdue);
+        }
+
+        .action-btn.delete:hover {
+            background: var(--status-overdue);
+            color: white;
+        }
+
+        /* Responsividade */
+        @media (max-width: 1200px) {
+            .cards-row {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .cards-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .transaction {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <h2>📊 Indicadores Financeiros</h2>
-    <<div class="container">
-    <div class="card blue">
-        <h3>💸 Total Previsto no Mês</h3>
-        <p>{{ total_previsto }}</p>
-    </div>
-    <div class="card blue">
-        <h3>✅ Total Pago no Mês</h3>
-        <p>{{ total_pago }}</p>
-    </div>
-    <div class="card blue">
-        <h3>📊 Saldo do Mês</h3>
-        <p>{{ saldo }}</p>
-    </div>
-    <div class="card red">
-        <h3><a href="/indicadores?filtro=atrasadas" style="text-decoration:none; color:inherit;">❌ Contas Vencidas</a></h3>
-        <p>{{ vencidas }}</p>
-    </div>
-    <div class="card blue">
-        <h3><a href="/indicadores?filtro=hoje" style="text-decoration:none; color:inherit;">📅 A Pagar Hoje</a></h3>
-        <p>{{ a_vencer }}</p>
-    </div>
-</div>
+    <div class="dashboard-container">
+        <!-- Cabeçalho e Filtro -->
+        <header class="dashboard-header">
+            <h1 class="page-title">Controle Financeiro</h1>
+            <div class="date-filter">
+                <input type="date" id="filter-date">
+                <button onclick="filterByDate()">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </header>
 
-</body>
-</html>
-<h2 style="margin-top:40px; text-align: left; font-size: 22px; color: #2c3e50;">
-    📋 {{ titulo_lancamentos }}
-    {% if request.args.get('filtro') %}
-        <a href="/indicadores" style="margin-left:20px; font-size: 14px; color: #2980b9; text-decoration: none;">← Voltar para visão geral</a>
-    {% endif %}
-</h2>
+        <!-- Cards Resumo -->
+        <div class="cards-row">
+            <!-- Card 1 - Total Previsto -->
+            <div class="card">
+                <div class="card-icon">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <h3 class="card-title">Total Previsto</h3>
+                <p class="card-value">{{ formatar_brl(total_previsto) }}</p>
+            </div>
 
-{% if lancamentos %}
-    <!-- Cabeçalho fixo -->
-    <div style="
-        display: grid;
-        grid-template-columns: 300px 160px 180px 180px 110px 110px 110px 100px;
-        font-weight: bold;
-        background-color: #f0f2f5;
-        padding: 12px 15px;
-        border-radius: 8px;
-        font-family: 'Segoe UI', sans-serif;
-        font-size: 14px;
-        border: 1px solid #dcdde1;
-    ">
-        <div>Fornecedor</div>
-        <div>Categoria</div>
-        <div>Plano de Contas</div>
-        <div>Centro de Custo</div>
-        <div>Vencimento</div>
-        <div>Previsto</div>
-        <div>Pago</div>
-        <div>Status</div>
-    </div>
+            <!-- Card 2 - Total Pago -->
+            <div class="card">
+                <div class="card-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <h3 class="card-title">Total Pago</h3>
+                <p class="card-value">{{ formatar_brl(total_pago) }}</p>
+            </div>
 
-    <!-- Lista de lançamentos -->
-    {% for v, c, f, p, val, pago in lancamentos %}
-        <div style="
-            display: grid;
-            grid-template-columns: 400px 160px 180px 180px 110px 110px 110px 100px;
-            background-color: #f9f9f9;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-top: 6px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 14px;
-            border: 1px solid #ecf0f1;
-        ">
-            <div>{{ f }}</div>
-            <div>{{ c }}</div>
-            <div>{{ p }}</div>
-            <div>–</div>
-            <div>{{ v }}</div>
-            <div>{{ 'R$ {:,.2f}'.format(val).replace(',', 'v').replace('.', ',').replace('v', '.') }}</div>
-            <div style="color:#27ae60;">{{ 'R$ {:,.2f}'.format(pago).replace(',', 'v').replace('.', ',').replace('v', '.') }}</div>
-            <div>
-                {% if pago > 0 %}
-                    <span style="color:green;">Pago</span>
-                {% elif val > 0 and datetime.strptime(v, "%d/%m/%Y").date() < now().date() %}
-                    <span style="color:red;">Vencido</span>
-                {% else %}
-                    <span style="color:orange;">Aberto</span>
-                {% endif %}
+            <!-- Card 3 - Saldo -->
+            <div class="card">
+                <div class="card-icon">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <h3 class="card-title">Saldo</h3>
+                <p class="card-value" style="color: {{ 'var(--accent)' if saldo >= 0 else 'var(--status-overdue)' }}">
+                    {{ formatar_brl(saldo) }}
+                </p>
+            </div>
+
+            <!-- Card 4 - A Pagar Hoje -->
+            <div class="card">
+                <div class="card-icon">
+                    <i class="bi bi-calendar-event"></i>
+                </div>
+                <h3 class="card-title">A Pagar Hoje</h3>
+                <p class="card-value">{{ formatar_brl(a_vencer) }}</p>
+            </div>
+
+            <!-- Card 5 - Atrasados -->
+            <div class="card">
+                <div class="card-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <h3 class="card-title">Atrasados</h3>
+                <p class="card-value">{{ formatar_brl(vencidas) }}</p>
             </div>
         </div>
-    {% endfor %}
-{% else %}
-    <p style="margin-top:20px;">Nenhum lançamento encontrado.</p>
-{% endif %}
 
+        <!-- Lista de Lançamentos -->
+        <div class="transactions-list">
+            <h2 style="margin-top: 0; margin-bottom: 20px; color: var(--primary);">
+                <i class="bi bi-list-ul" style="margin-right: 10px;"></i>
+                {{ titulo_lancamentos }}
+            </h2>
 
+            {% if lancamentos %}
+                <!-- Cabeçalho da Lista -->
+                <div class="transaction" style="font-weight: 600; border-bottom: 2px solid var(--primary-light);">
+                    <div class="transaction-cell">Fornecedor</div>
+                    <div class="transaction-cell">Categoria</div>
+                    <div class="transaction-cell">Plano</div>
+                    <div class="transaction-cell">Vencimento</div>
+                    <div class="transaction-cell">Valor</div>
+                    <div class="transaction-cell">Ações</div>
+                </div>
 
+                <!-- Itens da Lista -->
+                {% for v, c, f, p, val, pago in lancamentos %}
+                    <div class="transaction">
+                        <div class="transaction-cell">{{ f }}</div>
+                        <div class="transaction-cell">{{ c }}</div>
+                        <div class="transaction-cell">{{ p }}</div>
+                        <div class="transaction-cell">{{ v }}</div>
+                        <div class="transaction-cell">{{ formatar_brl(val) }}</div>
+                        <div class="transaction-cell">
+                            <div class="transaction-actions">
+                                <button class="action-btn" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="action-btn" title="Dar Baixa">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button class="action-btn delete" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; padding: 40px 0; color: #666;">
+                    <i class="bi bi-database" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Nenhum lançamento encontrado</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 
+    <script>
+        function filterByDate() {
+            const dateInput = document.getElementById('filter-date');
+            const selectedDate = dateInput.value;
 
+            if (selectedDate) {
+                const [year, month, day] = selectedDate.split('-');
+                window.location.href = `/indicadores?mes=${month}&ano=${year}`;
+            }
+        }
+
+        // Configura a data atual no filtro
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const formattedDate = today.toISOString().substr(0, 10);
+            document.getElementById('filter-date').value = formattedDate;
+        });
+    </script>
+</body>
+</html>

@@ -1,14 +1,18 @@
 from flask import Flask, render_template, request
+from datetime import datetime, date
 import sqlite3
-from datetime import datetime
 
 app = Flask(__name__)
 
-def formatar_valor(valor):
+
+def formatar_brl(valor):
+    """Formata valores monetários no padrão brasileiro"""
     try:
-        return f"R$ {valor:,.2f}".replace(",", "v").replace(".", ",").replace("v", ".")
-    except:
+        valor_float = float(valor) if valor is not None else 0.0
+        return f"R$ {valor_float:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except (ValueError, TypeError):
         return "R$ 0,00"
+
 
 @app.route("/indicadores")
 def indicadores():
@@ -16,86 +20,101 @@ def indicadores():
     cursor = conn.cursor()
 
     hoje = datetime.today()
-    dia_hoje = hoje.strftime('%d/%m/%Y')
-    data_sql = hoje.strftime('%Y-%m-%d')
-    mes_corrente = hoje.strftime('%m/%Y')
-
+    mes_param = request.args.get("mes", hoje.month)
+    ano_param = request.args.get("ano", hoje.year)
     filtro = request.args.get("filtro", "mes")
 
-    # Cards
-    cursor.execute("""
+    # Garante que mes/ano são strings com 2 dígitos
+    mes_corrente = f"{int(mes_param):02d}/{ano_param}"
+
+    # Consultas seguras com tratamento de None
+    def get_sql_result(query, params=()):
+        cursor.execute(query, params)
+        result = cursor.fetchone()[0]
+        return float(result) if result is not None else 0.0
+
+    # Totais
+    total_previsto = get_sql_result("""
         SELECT SUM(CAST(valor AS FLOAT)) FROM contas_a_pagar
         WHERE SUBSTR(vencimento, 4, 7) = ?
     """, (mes_corrente,))
-    total_previsto = cursor.fetchone()[0] or 0.0
 
-    cursor.execute("""
+    total_pago = get_sql_result("""
         SELECT SUM(CAST(valor_pago AS FLOAT)) FROM contas_a_pagar
         WHERE SUBSTR(vencimento, 4, 7) = ?
     """, (mes_corrente,))
-    total_pago = cursor.fetchone()[0] or 0.0
 
-    saldo = total_pago + total_previsto
+    saldo = total_previsto - total_pago  # Corrigido: saldo = previsto - pago
 
-    cursor.execute("""
-        SELECT COUNT(*) FROM contas_a_pagar 
+    # Valores vencidos e a vencer
+    valor_vencido_total = get_sql_result("""
+        SELECT SUM(CAST(valor AS FLOAT)) FROM contas_a_pagar
         WHERE (valor_pago IS NULL OR valor_pago = 0)
         AND date(substr(vencimento, 7, 4) || '-' || substr(vencimento, 4, 2) || '-' || substr(vencimento, 1, 2)) < date('now')
     """)
-    vencidas = cursor.fetchone()[0]
 
-    cursor.execute("""
-        SELECT COUNT(*) FROM contas_a_pagar 
+    valor_hoje_total = get_sql_result("""
+        SELECT SUM(CAST(valor AS FLOAT)) FROM contas_a_pagar
         WHERE (valor_pago IS NULL OR valor_pago = 0)
         AND date(substr(vencimento, 7, 4) || '-' || substr(vencimento, 4, 2) || '-' || substr(vencimento, 1, 2)) = date('now')
     """)
-    a_pagar_hoje = cursor.fetchone()[0]
 
-    # Filtrar lançamentos conforme botão clicado
+    # Lançamentos conforme filtro
+    query_lancamentos = """
+        SELECT vencimento, categorias, fornecedor, plano_de_contas, valor, valor_pago
+        FROM contas_a_pagar
+        WHERE 1=1
+    """
+
+    params = []
     if filtro == "atrasadas":
         titulo_lancamentos = "Contas Vencidas"
-        cursor.execute("""
-            SELECT vencimento, categorias, fornecedor, plano_de_contas, valor, valor_pago
-            FROM contas_a_pagar
-            WHERE (valor_pago IS NULL OR valor_pago = 0)
+        query_lancamentos += """
+            AND (valor_pago IS NULL OR valor_pago = 0)
             AND date(substr(vencimento, 7, 4) || '-' || substr(vencimento, 4, 2) || '-' || substr(vencimento, 1, 2)) < date('now')
-            ORDER BY vencimento ASC
-        """)
+        """
     elif filtro == "hoje":
         titulo_lancamentos = "Contas a Pagar Hoje"
-        cursor.execute("""
-            SELECT vencimento, categorias, fornecedor, plano_de_contas, valor, valor_pago
-            FROM contas_a_pagar
-            WHERE (valor_pago IS NULL OR valor_pago = 0)
+        query_lancamentos += """
+            AND (valor_pago IS NULL OR valor_pago = 0)
             AND date(substr(vencimento, 7, 4) || '-' || substr(vencimento, 4, 2) || '-' || substr(vencimento, 1, 2)) = date('now')
-            ORDER BY vencimento ASC
-        """)
+        """
     else:
         titulo_lancamentos = f"Lançamentos de {mes_corrente}"
-        cursor.execute("""
-            SELECT vencimento, categorias, fornecedor, plano_de_contas, valor, valor_pago
-            FROM contas_a_pagar
-            WHERE SUBSTR(vencimento, 4, 7) = ?
-            ORDER BY vencimento ASC
-        """, (mes_corrente,))
+        query_lancamentos += " AND SUBSTR(vencimento, 4, 7) = ?"
+        params.append(mes_corrente)
 
-    lancamentos = cursor.fetchall()
-    lancamentos = [
-        (v, c, f, p, float(val or 0), float(pago or 0))
-        for v, c, f, p, val, pago in lancamentos
-    ]
+    query_lancamentos += " ORDER BY vencimento ASC"
+    cursor.execute(query_lancamentos, params)
+
+    # Processamento seguro dos lançamentos
+    lancamentos = []
+    for v, c, f, p, val, pago in cursor.fetchall():
+        lancamentos.append((
+            v,
+            c or '-',
+            f or '-',
+            p or '-',
+            float(val) if val is not None else 0.0,
+            float(pago) if pago is not None else 0.0
+        ))
 
     conn.close()
 
-    return render_template("teste_cards.html",
-                           total_previsto=formatar_valor(total_previsto),
-                           total_pago=formatar_valor(total_pago),
-                           saldo=formatar_valor(saldo),
-                           vencidas=vencidas,
-                           a_vencer=a_pagar_hoje,
-                           lancamentos=lancamentos,
-                           mes_corrente=mes_corrente,
-                           titulo_lancamentos=titulo_lancamentos)
+    return render_template(
+        "teste_cards.html",
+        total_previsto=total_previsto,  # Envia como float para cálculos
+        total_pago=total_pago,
+        saldo=saldo,
+        vencidas=valor_vencido_total,
+        a_vencer=valor_hoje_total,
+        lancamentos=lancamentos,
+        mes_corrente=mes_corrente,
+        titulo_lancamentos=titulo_lancamentos,
+        hoje_data=date.today(),
+        datetime=datetime,
+        formatar_brl=formatar_brl  # Passa a função para o template
+    )
 
 
 if __name__ == "__main__":
