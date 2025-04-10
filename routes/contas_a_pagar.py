@@ -118,31 +118,40 @@ def contas_a_pagar():
             # Cálculo de totais
 
             totais = {
-                "total": sum(-formatar_valor(d[6]) for d in dados_filtrados),
-                "pagos": sum(formatar_valor(d[6]) for d in dados_filtrados if d[8] == "Pago"),
+                "total": sum(-formatar_valor(d[6]) for d in dados_filtrados if d[6]),
+                "pagos": sum(formatar_valor(d[7]) for d in dados_filtrados if d[8] == "Pago" and d[7]),
                 "pendentes": sum(-formatar_valor(d[6]) for d in dados_filtrados if
-                                 d[8] in ("Aberto", "Pendente", "Pago Parcialmente")),
-                "hoje": sum(-formatar_valor(d[6]) for d in dados_filtrados
-                            if datetime.strptime(d[5], "%d/%m/%Y").date() == hoje.date()),
-                "atrasados": sum(-formatar_valor(d[6]) for d in dados_filtrados
-                                 if d[8] in ("Aberto", "Pendente", "Pago Parcialmente") and
-                                 datetime.strptime(d[5], "%d/%m/%Y").date() < hoje.date())
+                                 d[8] in ("Aberto", "Pendente", "Pago Parcialmente") and d[6]),
+                "hoje": sum(-formatar_valor(d[6]) for d in dados_filtrados if
+                            d[6] and datetime.strptime(d[5], "%d/%m/%Y").date() == hoje.date()),
+                "atrasados": sum(-formatar_valor(d[6]) for d in dados_filtrados if
+                                 d[6] and d[8] in ("Aberto", "Pendente", "Pago Parcialmente") and datetime.strptime(
+                                     d[5], "%d/%m/%Y").date() < hoje.date())
             }
 
             # Preparação dos dados para o template
-            lista = [{
-                "codigo": d[0],
-                "fornecedor": d[1],
-                "categoria": d[2],
-                "centro": d[3],
-                "tipo": d[4],
-                "vencimento": d[5],
-                "valor": f"R$ {formatar_valor(d[6]):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                "valor_pago": f"R$ {formatar_valor(d[7]):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                "status": d[8],
-                "plano": d[9],
-                "raw_valor": formatar_valor(d[6])
-            } for d in dados_filtrados]
+            lista = []
+            for d in dados_filtrados:
+                try:
+                    valor_float = formatar_valor(d[6])
+                    valor_pago_float = formatar_valor(d[7])
+                except:
+                    valor_float = 0.0
+                    valor_pago_float = 0.0
+
+                lista.append({
+                    "codigo": d[0],
+                    "fornecedor": d[1],
+                    "categoria": d[2],
+                    "centro": d[3],
+                    "tipo": d[4],
+                    "vencimento": d[5],
+                    "valor": f"R$ {valor_float:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                    "valor_pago": f"R$ {valor_pago_float:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                    "status": d[8],
+                    "plano": d[9],
+                    "raw_valor": valor_float
+                })
 
             tipos_unicos = list({item["tipo"] for item in lista if item.get("tipo")})
 
