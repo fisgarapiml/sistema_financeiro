@@ -1,14 +1,11 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neon Finance | Controle Financeiro</title>
-
-    <!-- Fontes & Ícones -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-
     <style>
         :root {
             --primary: #0066ff;
@@ -29,21 +26,20 @@
             color: var(--text);
             margin: 0;
             padding: 20px;
-            min-height: 100vh;
         }
 
-        /* Layout Principal */
         .dashboard-container {
             max-width: 1600px;
             margin: 0 auto;
         }
 
-        /* Cabeçalho */
         .dashboard-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .page-title {
@@ -56,7 +52,6 @@
             margin: 0;
         }
 
-        /* Filtro por Data */
         .date-filter {
             display: flex;
             gap: 10px;
@@ -70,24 +65,28 @@
             font-family: inherit;
         }
 
+        .date-filter input {
+            background: white;
+        }
+
         .date-filter button {
             background: var(--primary);
             color: white;
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.3s;
         }
 
         .date-filter button:hover {
             background: #0052cc;
         }
 
-        /* Cards em Linha */
+        /* Cards Resumo */
         .cards-row {
             display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
             gap: 20px;
-            overflow-x: auto;
-            padding-bottom: 15px;
             margin-bottom: 30px;
         }
 
@@ -97,14 +96,18 @@
             border-radius: 16px;
             padding: 20px;
             box-shadow: var(--card-shadow);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            transition: all 0.3s ease;
-            flex-shrink: 0;
+            transition: all 0.3s;
+            cursor: pointer;
         }
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 102, 255, 0.12);
+            box-shadow: 0 8px 25px rgba(0, 102, 255, 0.15);
+        }
+
+        .card.active {
+            border: 2px solid var(--primary);
+            background: rgba(0, 102, 255, 0.05);
         }
 
         .card-icon {
@@ -117,44 +120,180 @@
             justify-content: center;
             margin-bottom: 15px;
             color: var(--primary);
-            font-size: 1.2rem;
         }
 
         .card-title {
             font-size: 1rem;
             font-weight: 600;
             margin-bottom: 5px;
-            color: var(--text);
+            color: #555;
         }
 
         .card-value {
             font-size: 1.5rem;
             font-weight: 700;
-            font-family: 'Space Grotesk', monospace;
+        }
+
+        /* Timeline Diária */
+        .daily-timeline {
+            margin: 40px 0;
+            background: linear-gradient(135deg, #f8faff 0%, #e6f0ff 100%);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 102, 255, 0.1);
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .timeline-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timeline-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .timeline-nav button {
+            background: var(--primary-light);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--primary);
+            transition: all 0.3s;
+        }
+
+        .timeline-nav button:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .daily-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .day-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .day-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .day-card.paid {
+            background: rgba(0, 200, 83, 0.1);
+            border: 1px solid rgba(0, 200, 83, 0.3);
+        }
+
+        .day-card.pending {
+            background: rgba(255, 171, 0, 0.1);
+            border: 1px solid rgba(255, 171, 0, 0.3);
+        }
+
+        .day-card.overdue {
+            background: rgba(255, 61, 0, 0.1);
+            border: 1px solid rgba(255, 61, 0, 0.3);
+        }
+
+        .day-card.current-day {
+            border: 2px solid var(--primary);
+            position: relative;
+        }
+
+        .day-card.current-day::after {
+            content: 'Hoje';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--primary);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .day-name {
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .day-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .day-total {
+            font-weight: 700;
+            text-align: center;
+            font-size: 1.1rem;
         }
 
         /* Lista de Lançamentos */
         .transactions-list {
-            background: var(--card-bg);
+            background: white;
             border-radius: 16px;
             padding: 25px;
+            margin-top: 30px;
             box-shadow: var(--card-shadow);
         }
 
-        .transaction {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr 100px 120px;
+        .transactions-list h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
             align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .transaction:last-child {
-            border-bottom: none;
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .transaction-cell {
-            padding: 0 10px;
+        .transactions-table th {
+            text-align: left;
+            padding: 12px 10px;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary-light);
+            font-weight: 600;
+        }
+
+        .transactions-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+
+        .transactions-table tr:hover td {
+            background: rgba(0, 102, 255, 0.03);
         }
 
         .transaction-status {
@@ -196,7 +335,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
         }
 
         .action-btn:hover {
@@ -214,138 +353,195 @@
             color: white;
         }
 
-        /* Responsividade */
-        @media (max-width: 1200px) {
-            .cards-row {
-                grid-template-columns: repeat(3, 1fr);
-            }
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--primary-light);
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 1.1rem;
         }
 
         @media (max-width: 768px) {
             .dashboard-header {
                 flex-direction: column;
-                gap: 15px;
                 align-items: flex-start;
             }
 
-            .cards-row {
-                grid-template-columns: 1fr 1fr;
+            .date-filter {
+                width: 100%;
             }
 
-            .transaction {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
+            .date-filter input {
+                flex: 1;
+            }
+
+            .card {
+                min-width: calc(50% - 10px);
+            }
+
+            .daily-grid {
+                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            }
+
+            .transactions-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                min-width: 100%;
+            }
+
+            .day-card {
+                padding: 10px;
+            }
+
+            .day-total {
+                font-size: 0.9rem;
             }
         }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Cabeçalho e Filtro -->
         <header class="dashboard-header">
             <h1 class="page-title">Controle Financeiro</h1>
             <div class="date-filter">
-                <input type="date" id="filter-date">
+                <input type="date" id="filter-date" value="{{ ano_corrente }}-{{ mes_corrente }}-01">
                 <button onclick="filterByDate()">
                     <i class="bi bi-funnel"></i> Filtrar
                 </button>
             </div>
         </header>
 
-        <!-- Cards Resumo -->
+        <!-- Cards Resumo - Corrigido sem filtro -->
         <div class="cards-row">
-            <!-- Card 1 - Total Previsto -->
-            <div class="card">
+            <div class="card active" data-filter="all" onclick="filterTransactions('all')">
                 <div class="card-icon">
                     <i class="bi bi-cash-stack"></i>
                 </div>
                 <h3 class="card-title">Total Previsto</h3>
-                <p class="card-value">{{ formatar_brl(total_previsto) }}</p>
+                <p class="card-value">R$ {{ "%.2f"|format(total_previsto|float) }}</p>
             </div>
 
-            <!-- Card 2 - Total Pago -->
-            <div class="card">
+            <div class="card" data-filter="paid" onclick="filterTransactions('paid')">
                 <div class="card-icon">
                     <i class="bi bi-check-circle"></i>
                 </div>
                 <h3 class="card-title">Total Pago</h3>
-                <p class="card-value">{{ formatar_brl(total_pago) }}</p>
+                <p class="card-value">{{ total_pago|formatar_brl }}</p>
             </div>
 
-            <!-- Card 3 - Saldo -->
-            <div class="card">
+            <div class="card" data-filter="balance" onclick="filterTransactions('balance')">
                 <div class="card-icon">
                     <i class="bi bi-graph-up"></i>
                 </div>
                 <h3 class="card-title">Saldo</h3>
                 <p class="card-value" style="color: {{ 'var(--accent)' if saldo >= 0 else 'var(--status-overdue)' }}">
-                    {{ formatar_brl(saldo) }}
+                    {{ saldo|formatar_brl }}
                 </p>
             </div>
 
-            <!-- Card 4 - A Pagar Hoje -->
-            <div class="card">
+            <div class="card" data-filter="today" onclick="filterTransactions('today')">
                 <div class="card-icon">
                     <i class="bi bi-calendar-event"></i>
                 </div>
                 <h3 class="card-title">A Pagar Hoje</h3>
-                <p class="card-value">{{ formatar_brl(a_vencer) }}</p>
+                <p class="card-value">{{ a_vencer|formatar_brl }}</p>
             </div>
 
-            <!-- Card 5 - Atrasados -->
-            <div class="card">
+            <div class="card" data-filter="overdue" onclick="filterTransactions('overdue')">
                 <div class="card-icon">
                     <i class="bi bi-exclamation-triangle"></i>
                 </div>
                 <h3 class="card-title">Atrasados</h3>
-                <p class="card-value">{{ formatar_brl(vencidas) }}</p>
+                <p class="card-value">{{ vencidas|formatar_brl }}</p>
             </div>
         </div>
 
-        <!-- Lista de Lançamentos -->
+        <div class="daily-timeline">
+            <div class="timeline-header">
+                <h3 class="timeline-title">
+                    <i class="bi bi-calendar-range"></i>
+                    Fluxo Diário - {{ mes_corrente }} {{ ano_corrente }}
+                </h3>
+                <!-- [Restante permanece igual] -->
+            </div>
+            <div class="daily-grid" id="daily-grid">
+                <!-- Será preenchido via JavaScript -->
+            </div>
+        </div>
+
+        <!-- Lista de Lançamentos - Corrigido -->
         <div class="transactions-list">
-            <h2 style="margin-top: 0; margin-bottom: 20px; color: var(--primary);">
-                <i class="bi bi-list-ul" style="margin-right: 10px;"></i>
+            <h2>
+                <i class="bi bi-list-ul"></i>
                 {{ titulo_lancamentos }}
             </h2>
 
             {% if lancamentos %}
-                <!-- Cabeçalho da Lista -->
-                <div class="transaction" style="font-weight: 600; border-bottom: 2px solid var(--primary-light);">
-                    <div class="transaction-cell">Fornecedor</div>
-                    <div class="transaction-cell">Categoria</div>
-                    <div class="transaction-cell">Plano</div>
-                    <div class="transaction-cell">Vencimento</div>
-                    <div class="transaction-cell">Valor</div>
-                    <div class="transaction-cell">Ações</div>
-                </div>
-
-                <!-- Itens da Lista -->
-                {% for v, c, f, p, val, pago in lancamentos %}
-                    <div class="transaction">
-                        <div class="transaction-cell">{{ f }}</div>
-                        <div class="transaction-cell">{{ c }}</div>
-                        <div class="transaction-cell">{{ p }}</div>
-                        <div class="transaction-cell">{{ v }}</div>
-                        <div class="transaction-cell">{{ formatar_brl(val) }}</div>
-                        <div class="transaction-cell">
-                            <div class="transaction-actions">
-                                <button class="action-btn" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="action-btn" title="Dar Baixa">
-                                    <i class="bi bi-check-lg"></i>
-                                </button>
-                                <button class="action-btn delete" title="Excluir">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Fornecedor</th>
+                            <th>Categoria</th>
+                            <th>Plano</th>
+                            <th>Vencimento</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lancamento in lancamentos %}
+                            <tr>
+                                <td>{{ lancamento.fornecedor }}</td>
+                                <td>{{ lancamento.categoria }}</td>
+                                <td>{{ lancamento.plano }}</td>
+                                <td>{{ lancamento.vencimento }}</td>
+                                <td>R$ {{ "%.2f"|format(lancamento.valor|float) }}</td>
+                                <td>
+                                    <span class="transaction-status status-{{ lancamento.status }}">
+                                        {% if lancamento.status == 'paid' %}Pago
+                                        {% elif lancamento.status == 'pending' %}Pendente
+                                        {% elif lancamento.status == 'overdue' %}Atrasado
+                                        {% else %}{{ lancamento.status }}{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="transaction-actions">
+                                        <button class="action-btn" title="Editar" onclick="editTransaction({{ lancamento.id }})">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% if lancamento.status != 'paid' %}
+                                        <button class="action-btn" title="Dar Baixa" onclick="markAsPaid({{ lancamento.id }})">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button class="action-btn delete" title="Excluir" onclick="deleteTransaction({{ lancamento.id }})">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             {% else %}
-                <div style="text-align: center; padding: 40px 0; color: #666;">
-                    <i class="bi bi-database" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                <div class="empty-state">
+                    <i class="bi bi-database"></i>
                     <p>Nenhum lançamento encontrado</p>
                 </div>
             {% endif %}
@@ -353,22 +549,176 @@
     </div>
 
     <script>
+        // Dados diários do backend - versão segura
+        const dailyPayments = JSON.parse('{{ daily_payments|tojson|safe }}' || '{}');
+        let currentMonth = parseInt('{{ mes_corrente }}') || new Date().getMonth() + 1;
+        let currentYear = parseInt('{{ ano_corrente }}') || new Date().getFullYear();
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Dados diários do backend - versão segura
+        const dailyPayments = JSON.parse('{{ daily_payments|tojson|safe }}' || '{}');
+        let currentMonth = parseInt('{{ mes_corrente }}') || new Date().getMonth() + 1;
+        let currentYear = parseInt('{{ ano_corrente }}') || new Date().getFullYear();
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Dados diários do backend
+        const dailyPayments = JSON.parse('{{ daily_payments|tojson|safe }}');
+        let currentMonth = parseInt('{{ mes_corrente }}');
+        let currentYear = parseInt('{{ ano_corrente }}');
+        let activeFilter = 'all';
+
+        // Inicializa a página
+        document.addEventListener('DOMContentLoaded', function() {
+            renderDailyTimeline();
+            setupEventListeners();
+        });
+
+        // Renderiza a timeline diária com os dados reais
+        function renderDailyTimeline() {
+            const grid = document.getElementById('daily-grid');
+            grid.innerHTML = '';
+
+            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+            const today = new Date();
+            const currentDay = today.getDate();
+            const currentMonthJS = today.getMonth() + 1;
+            const currentYearJS = today.getFullYear();
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayStr = String(day).padStart(2, '0');
+                const date = new Date(currentYear, currentMonth - 1, day);
+                const dayKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${dayStr}`;
+                const dayData = dailyPayments[dayKey] || { total: 0, status: "none" };
+
+                const dayCard = document.createElement('div');
+                dayCard.className = `day-card ${dayData.status}`;
+
+                if (day === currentDay && currentMonth === currentMonthJS && currentYear === currentYearJS) {
+                    dayCard.classList.add('current-day');
+                }
+
+                dayCard.innerHTML = `
+                    <div class="day-header">
+                        <span class="day-name">${date.toLocaleDateString('pt-BR', { weekday: 'short' })}</span>
+                        <span class="day-date">${dayStr}</span>
+                    </div>
+                    <div class="day-total">${dayData.total > 0 ? 'R$ ' + dayData.total.toFixed(2).replace('.', ',') : '-'}</div>
+                `;
+
+                dayCard.addEventListener('click', function() {
+                    filterByDay(day);
+                });
+
+                grid.appendChild(dayCard);
+            }
+        }
+
+        // Configura os event listeners
+        function setupEventListeners() {
+            // Filtro por cards
+            document.querySelectorAll('.card').forEach(card => {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        // Navegação entre meses
+        function changeMonth(offset) {
+            currentMonth += offset;
+
+            if (currentMonth > 12) {
+                currentMonth = 1;
+                currentYear++;
+            } else if (currentMonth < 1) {
+                currentMonth = 12;
+                currentYear--;
+            }
+
+            // Atualiza a página com o novo mês/ano
+            window.location.href = `/?mes=${currentMonth}&ano=${currentYear}`;
+        }
+
+        // Filtro por data
         function filterByDate() {
             const dateInput = document.getElementById('filter-date');
             const selectedDate = dateInput.value;
 
             if (selectedDate) {
-                const [year, month, day] = selectedDate.split('-');
-                window.location.href = `/indicadores?mes=${month}&ano=${year}`;
+                const [year, month] = selectedDate.split('-');
+                window.location.href = `/?mes=${parseInt(month)}&ano=${year}`;
             }
         }
 
-        // Configura a data atual no filtro
-        document.addEventListener('DOMContentLoaded', function() {
-            const today = new Date();
-            const formattedDate = today.toISOString().substr(0, 10);
-            document.getElementById('filter-date').value = formattedDate;
-        });
+        // Filtro por dia
+        function filterByDay(day) {
+            const selectedDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            window.location.href = `/?data=${selectedDate}`;
+        }
+
+        // Filtra as transações
+        function filterTransactions(filterType) {
+            activeFilter = filterType;
+            window.location.href = `/?filtro=${filterType}`;
+        }
+
+        // Funções de ação
+        function editTransaction(id) {
+            window.location.href = `/editar/${id}`;
+        }
+
+        function markAsPaid(id) {
+            if (confirm('Deseja marcar este lançamento como pago?')) {
+                fetch(`/marcar-como-pago/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Erro ao atualizar o lançamento');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao conectar com o servidor');
+                });
+            }
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('Tem certeza que deseja excluir este lançamento?')) {
+                fetch(`/excluir/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Erro ao excluir o lançamento');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao conectar com o servidor');
+                });
+            }
+        }
     </script>
 </body>
 </html>

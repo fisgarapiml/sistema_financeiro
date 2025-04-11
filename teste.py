@@ -1,11 +1,9 @@
-import sqlite3
+from flask import Flask
+app = Flask(__name__)
 
-conn = sqlite3.connect("grupo_fisgar - copia.db")
-cursor = conn.cursor()
+@app.route('/')
+def home():
+    return "Funcionando!"
 
-# Verificar os últimos lançamentos que deveriam ter sido baixados
-cursor.execute("SELECT codigo, fornecedor, valor, valor_pago, status, vencimento FROM contas_a_pagar ORDER BY codigo DESC LIMIT 10")
-for row in cursor.fetchall():
-    print(row)
-
-conn.close()
+if __name__ == "__main__":
+    app.run(debug=True, port=5001)
