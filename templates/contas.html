@@ -1,0 +1,110 @@
+<!-- Adicione este modal ao final do seu arquivo, antes do </body> -->
+<div id="modalEdicaoMassa" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
+    <div style="background:white;width:80%;max-width:600px;margin:5% auto;padding:20px;border-radius:8px;">
+        <h3>Edição em Massa</h3>
+        <p id="selectedCount">0 lançamentos selecionados</p>
+
+        <div style="margin-bottom:15px;">
+            <label>Status:</label>
+            <select id="editStatus" style="width:100%;padding:8px;">
+                <option value="">Não alterar</option>
+                <option value="pending">Pendente</option>
+                <option value="paid">Pago</option>
+                <option value="overdue">Atrasado</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>Fornecedor:</label>
+            <input type="text" id="editFornecedor" style="width:100%;padding:8px;" placeholder="Deixe em branco para não alterar">
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>Comentário:</label>
+            <textarea id="editComentario" style="width:100%;padding:8px;min-height:80px;"></textarea>
+        </div>
+
+        <div style="text-align:right;">
+            <button onclick="fecharModal()" style="padding:8px 15px;margin-right:10px;">Cancelar</button>
+            <button onclick="aplicarEdicaoMassa()" style="padding:8px 15px;background:#4CAF50;color:white;border:none;">Aplicar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Variáveis globais
+    let selectedIds = [];
+
+    // Função para abrir o modal
+    function abrirModalEdicaoMassa() {
+        document.getElementById('modalEdicaoMassa').style.display = 'block';
+        document.getElementById('selectedCount').innerText = selectedIds.length + ' lançamentos selecionados';
+    }
+
+    // Função para fechar o modal
+    function fecharModal() {
+        document.getElementById('modalEdicaoMassa').style.display = 'none';
+    }
+
+    // Função para aplicar as edições
+    function aplicarEdicaoMassa() {
+        const dados = {
+            ids: selectedIds,
+            status: document.getElementById('editStatus').value || null,
+            fornecedor: document.getElementById('editFornecedor').value || null,
+            comentario: document.getElementById('editComentario').value || null
+        };
+
+        fetch('/editar_massa', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dados)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro na requisição');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Erro: ' + (data.error || 'Falha na atualização'));
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao conectar com o servidor');
+        })
+        .finally(fecharModal);
+    }
+
+    // Atualizar seleção quando checkboxes mudam
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.select-row');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            atualizarSelecionados();
+        });
+
+        document.querySelectorAll('.select-row').forEach(cb => {
+            cb.addEventListener('change', atualizarSelecionados);
+        });
+    });
+
+    function atualizarSelecionados() {
+        selectedIds = [];
+        document.querySelectorAll('.select-row:checked').forEach(cb => {
+            selectedIds.push(cb.dataset.id);
+        });
+
+        const btnEditarMassa = document.getElementById('btnEditarMassa');
+        if (btnEditarMassa) {
+            btnEditarMassa.disabled = selectedIds.length === 0;
+        }
+    }
+</script>

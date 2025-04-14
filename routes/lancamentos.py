@@ -111,7 +111,7 @@ def lancamentos():
             "raw_valor_pago": d[7]
         })
 
-    return render_template("lancamentos.html",
+    return render_template("lancamento_manual.html",
                            lancamentos=lista_lancamentos,
                            totais=totais,
                            data_de=data_inicio,
