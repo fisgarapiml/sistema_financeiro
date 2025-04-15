@@ -219,7 +219,7 @@ def importar_para_sqlite(df, banco_dados):
 # Execução principal
 if __name__ == "__main__":
     sheet_id = "1zj7fuvta2T55G0-cPnWthEfrVnqaui9u2EJ2cBJp64M"
-    sheet_name = "financeiro"
+    sheet_name = "compras"
     df = carregar_planilha_google_sheets(sheet_id, sheet_name)
 
     if df is not None:

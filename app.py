@@ -1,10 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from datetime import datetime, date
+from routes.compras import compras_bp
 import sqlite3
 import json
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates', static_folder='static')
 
 
 # Funções auxiliares
@@ -15,6 +16,7 @@ def formatar_brl(valor):
         return f"R$ {valor_float:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except (ValueError, TypeError):
         return "R$ 0,00"
+
 
 def calcular_status(vencimento_str, valor_pago):
     """Calcula o status do lançamento baseado na data de vencimento e se foi pago"""
@@ -32,22 +34,24 @@ def calcular_status(vencimento_str, valor_pago):
     except:
         return 'pending'
 
+
 def get_db_connection():
     """Cria e retorna uma conexão com o banco de dados"""
     conn = sqlite3.connect("C:/sistema_financeiro/grupo_fisgar.db")
     conn.row_factory = sqlite3.Row  # Converte para dicionário
     return conn
 
+
 # Rotas principais
 @app.route("/")
 def index():
     return redirect(url_for('contas_a_pagar'))
 
+
 @app.route("/contas_a_pagar")
 def contas_a_pagar():
     conn = get_db_connection()
     try:
-        # Buscar todas as contas
         contas = conn.execute('''
             SELECT codigo, fornecedor, documento, vencimento, 
                    valor, valor_pago, categorias, plano_de_contas,
@@ -61,19 +65,19 @@ def contas_a_pagar():
             ORDER BY vencimento
         ''').fetchall()
 
-        # Buscar fornecedores distintos para os filtros
         fornecedores = [f[0] for f in conn.execute(
             'SELECT DISTINCT fornecedor FROM contas_a_pagar WHERE fornecedor IS NOT NULL').fetchall()]
 
         return render_template('contas_a_pagar.html',
-                             contas=contas,
-                             fornecedores=fornecedores,
-                             formatar_brl=formatar_brl)  # ← Garanta que está passando a função
+                               contas=contas,
+                               fornecedores=fornecedores,
+                               formatar_brl=formatar_brl)
     except Exception as e:
         flash(f"Erro ao carregar contas: {str(e)}", "danger")
         return render_template('contas_a_pagar.html', contas=[], fornecedores=[], formatar_brl=formatar_brl)
     finally:
         conn.close()
+
 
 @app.route("/indicadores")
 def indicadores():
@@ -86,10 +90,8 @@ def indicadores():
         ano_param = request.args.get("ano", hoje.year)
         filtro = request.args.get("filtro", "mes")
 
-        # Garante que mes/ano são strings com 2 dígitos
         mes_corrente = f"{int(mes_param):02d}/{ano_param}"
 
-        # Consulta para obter os dias do mês com pagamentos
         cursor.execute("""
             SELECT 
                 substr(vencimento, 1, 2) as dia,
@@ -106,7 +108,6 @@ def indicadores():
             ORDER BY dia
         """, (mes_corrente,))
 
-        # Processa os resultados para o formato diário
         daily_data = {}
         for row in cursor.fetchall():
             dia, total, status = row
@@ -119,14 +120,12 @@ def indicadores():
             else:
                 daily_data[dia] = {'total': total, 'status': status}
 
-        # Preenche os dias sem lançamentos com zero
         days_in_month = 31
         complete_daily_data = {}
         for day in range(1, days_in_month + 1):
             day_str = f"{day:02d}"
             complete_daily_data[day_str] = daily_data.get(day_str, {'total': 0, 'status': 'none'})
 
-        # Consultas totais
         def get_sql_result(query, params=()):
             cursor.execute(query, params)
             result = cursor.fetchone()[0]
@@ -144,7 +143,6 @@ def indicadores():
 
         saldo = total_pago + total_previsto
 
-        # Valores vencidos e a vencer
         valor_vencido_total = get_sql_result("""
             SELECT SUM(CAST(valor AS FLOAT)) FROM contas_a_pagar
             WHERE (valor_pago IS NULL OR valor_pago = 0)
@@ -157,7 +155,6 @@ def indicadores():
             AND date(substr(vencimento, 7, 4) || '-' || substr(vencimento, 4, 2) || '-' || substr(vencimento, 1, 2)) = date('now')
             """)
 
-        # Consulta lançamentos
         query_lancamentos = """
             SELECT codigo, vencimento, categorias, fornecedor, plano_de_contas, valor, valor_pago
             FROM contas_a_pagar
@@ -186,7 +183,6 @@ def indicadores():
         query_lancamentos += " ORDER BY vencimento ASC"
         cursor.execute(query_lancamentos, params)
 
-        # Processamento dos lançamentos
         lancamentos = []
         for row in cursor.fetchall():
             codigo, vencimento, categoria, fornecedor, plano, valor, valor_pago = row
@@ -224,13 +220,13 @@ def indicadores():
     finally:
         conn.close()
 
+
 @app.route("/lancamento_manual", methods=["GET", "POST"])
 def lancamento_manual():
     conn = get_db_connection()
 
     if request.method == "POST":
         try:
-            # Pega todos os campos do formulário
             dados = {
                 'fornecedor': request.form.get('fornecedor'),
                 'categorias': request.form.get('categorias'),
@@ -243,7 +239,8 @@ def lancamento_manual():
                 'conta': request.form.get('conta'),
                 'tipo_custo': request.form.get('tipo_custo'),
                 'tipo': request.form.get('tipo'),
-                'status': request.form.get('status') or calcular_status(request.form.get('vencimento'), request.form.get('valor_pago')),
+                'status': request.form.get('status') or calcular_status(request.form.get('vencimento'),
+                                                                        request.form.get('valor_pago')),
                 'documento': request.form.get('documento'),
                 'tipo_documento': request.form.get('tipo_documento'),
                 'pagamento_tipo': request.form.get('pagamento_tipo'),
@@ -253,7 +250,6 @@ def lancamento_manual():
                 'data_documento': request.form.get('data_documento')
             }
 
-            # Query com todas as colunas do banco
             conn.execute("""
                 INSERT INTO contas_a_pagar (
                     fornecedor, categorias, plano_de_contas, valor, vencimento,
@@ -271,19 +267,26 @@ def lancamento_manual():
             conn.rollback()
             flash(f"Erro ao cadastrar: {str(e)}", "danger")
 
-    # Para GET: Busca opções para os selects
     try:
         campos_select = {
-            'fornecedores': conn.execute("SELECT DISTINCT fornecedor FROM contas_a_pagar WHERE fornecedor IS NOT NULL").fetchall(),
-            'categorias': conn.execute("SELECT DISTINCT categorias FROM contas_a_pagar WHERE categorias IS NOT NULL").fetchall(),
-            'planos': conn.execute("SELECT DISTINCT plano_de_contas FROM contas_a_pagar WHERE plano_de_contas IS NOT NULL").fetchall(),
-            'centros_custo': conn.execute("SELECT DISTINCT centro_de_custo FROM contas_a_pagar WHERE centro_de_custo IS NOT NULL").fetchall(),
-            'empresas': conn.execute("SELECT DISTINCT empresa FROM contas_a_pagar WHERE empresa IS NOT NULL").fetchall(),
+            'fornecedores': conn.execute(
+                "SELECT DISTINCT fornecedor FROM contas_a_pagar WHERE fornecedor IS NOT NULL").fetchall(),
+            'categorias': conn.execute(
+                "SELECT DISTINCT categorias FROM contas_a_pagar WHERE categorias IS NOT NULL").fetchall(),
+            'planos': conn.execute(
+                "SELECT DISTINCT plano_de_contas FROM contas_a_pagar WHERE plano_de_contas IS NOT NULL").fetchall(),
+            'centros_custo': conn.execute(
+                "SELECT DISTINCT centro_de_custo FROM contas_a_pagar WHERE centro_de_custo IS NOT NULL").fetchall(),
+            'empresas': conn.execute(
+                "SELECT DISTINCT empresa FROM contas_a_pagar WHERE empresa IS NOT NULL").fetchall(),
             'contas': conn.execute("SELECT DISTINCT conta FROM contas_a_pagar WHERE conta IS NOT NULL").fetchall(),
-            'tipos_custo': conn.execute("SELECT DISTINCT tipo_custo FROM contas_a_pagar WHERE tipo_custo IS NOT NULL").fetchall(),
+            'tipos_custo': conn.execute(
+                "SELECT DISTINCT tipo_custo FROM contas_a_pagar WHERE tipo_custo IS NOT NULL").fetchall(),
             'tipos': conn.execute("SELECT DISTINCT tipo FROM contas_a_pagar WHERE tipo IS NOT NULL").fetchall(),
-            'tipos_doc': conn.execute("SELECT DISTINCT tipo_documento FROM contas_a_pagar WHERE tipo_documento IS NOT NULL").fetchall(),
-            'formas_pagto': conn.execute("SELECT DISTINCT pagamento_tipo FROM contas_a_pagar WHERE pagamento_tipo IS NOT NULL").fetchall()
+            'tipos_doc': conn.execute(
+                "SELECT DISTINCT tipo_documento FROM contas_a_pagar WHERE tipo_documento IS NOT NULL").fetchall(),
+            'formas_pagto': conn.execute(
+                "SELECT DISTINCT pagamento_tipo FROM contas_a_pagar WHERE pagamento_tipo IS NOT NULL").fetchall()
         }
 
         opcoes = {k: [item[0] for item in v] for k, v in campos_select.items()}
@@ -296,7 +299,7 @@ def lancamento_manual():
     finally:
         conn.close()
 
-# Rotas de ação (API)
+
 @app.route("/marcar_pago", methods=["POST"])
 def marcar_pago():
     try:
@@ -313,6 +316,7 @@ def marcar_pago():
     finally:
         conn.close()
 
+
 @app.route("/excluir", methods=["POST"])
 def excluir():
     try:
@@ -328,6 +332,7 @@ def excluir():
         return jsonify({"success": False, "error": str(e)}), 500
     finally:
         conn.close()
+
 
 @app.route("/editar", methods=["POST"])
 def editar():
@@ -356,6 +361,7 @@ def editar():
     finally:
         conn.close()
 
+
 @app.route('/editar_massa', methods=['POST'])
 def editar_massa():
     try:
@@ -366,13 +372,106 @@ def editar_massa():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # ... (sua lógica de edição em massa) ...
+        updates = []
+        params = []
+
+        if 'status' in data:
+            updates.append("status = ?")
+            params.append(data['status'])
+
+        if 'vencimento' in data:
+            updates.append("vencimento = ?")
+            params.append(data['vencimento'])
+
+        if 'fornecedor' in data:
+            updates.append("fornecedor = ?")
+            params.append(data['fornecedor'])
+
+        if updates:
+            query = "UPDATE contas_a_pagar SET " + ", ".join(updates) + " WHERE codigo IN (" + ",".join(
+                ["?"] * len(data['ids'])) + ")"
+            params.extend(data['ids'])
+            cursor.execute(query, params)
+            conn.commit()
 
         return jsonify({"success": True, "message": "Atualizado com sucesso"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
     finally:
         conn.close()
+
+
+@app.route('/estoque')
+def estoque():
+    conn = get_db_connection()
+    try:
+        # Dados para os cards
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT 
+                COUNT(*) as total_itens,
+                SUM(CASE WHEN estoque_atual > estoque_minimo THEN 1 ELSE 0 END) as itens_ok,
+                SUM(CASE WHEN estoque_atual > 0 AND estoque_atual <= estoque_minimo THEN 1 ELSE 0 END) as itens_baixos,
+                SUM(CASE WHEN estoque_atual = 0 THEN 1 ELSE 0 END) as itens_esgotados
+            FROM produtos
+        ''')
+        cards_data = cursor.fetchone()
+
+        # Itens críticos
+        cursor.execute('''
+            SELECT p.codigo, p.nome, p.categoria, f.nome as fornecedor, 
+                   p.estoque_atual, p.estoque_minimo,
+                   CASE 
+                       WHEN p.estoque_atual = 0 THEN 'Esgotado'
+                       WHEN p.estoque_atual <= p.estoque_minimo THEN 'Crítico'
+                       ELSE 'OK'
+                   END as status,
+                   (SELECT MAX(data) FROM movimentacoes WHERE produto_id = p.id AND tipo = 'entrada') as ultima_entrada
+            FROM produtos p
+            LEFT JOIN fornecedores f ON p.fornecedor_id = f.id
+            WHERE p.estoque_atual <= p.estoque_minimo
+            ORDER BY p.estoque_atual ASC
+            LIMIT 50
+        ''')
+        itens_criticos = [dict(row) for row in cursor.fetchall()]
+
+        # Dados para gráficos (simplificado)
+        meses = ['Jan', 'Fev', 'Mar']
+        entradas = [120, 190, 170]
+        saidas = [80, 120, 140]
+        categorias = ['Eletrônicos', 'Materiais']
+        valores = [12000, 5000]
+
+        return render_template('estoque.html',
+                               cards_data=cards_data,
+                               itens_criticos=itens_criticos,
+                               meses=json.dumps(meses),
+                               entradas=json.dumps(entradas),
+                               saidas=json.dumps(saidas),
+                               categorias=json.dumps(categorias),
+                               valores=json.dumps(valores))
+
+    except Exception as e:
+        print(f"Erro na rota estoque: {str(e)}")
+        # Dados de fallback caso ocorra erro
+        dados_fallback = {
+            'cards_data': {
+                'total_itens': 0,
+                'itens_ok': 0,
+                'itens_baixos': 0,
+                'itens_esgotados': 0
+            },
+            'itens_criticos': [],
+            'meses': json.dumps([]),
+            'entradas': json.dumps([]),
+            'saidas': json.dumps([]),
+            'categorias': json.dumps([]),
+            'valores': json.dumps([])
+        }
+        return render_template('estoque.html', **dados_fallback)
+    finally:
+        conn.close()
+app.register_blueprint(compras_bp)
 
 if __name__ == "__main__":
     app.run(debug=True)

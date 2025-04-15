@@ -1,11 +1,20 @@
-# database.py (ou similar)
 import sqlite3
-from datetime import datetime
 
 
-def criar_tabelas_estoque():
+def criar_tabelas():
     conn = sqlite3.connect('grupo_fisgar.db')
     cursor = conn.cursor()
+
+    # Tabela de Fornecedores
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS fornecedores (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        cnpj TEXT UNIQUE,
+        telefone TEXT,
+        email TEXT
+    )
+    ''')
 
     # Tabela de Produtos
     cursor.execute('''
@@ -24,17 +33,6 @@ def criar_tabelas_estoque():
     )
     ''')
 
-    # Tabela de Fornecedores (se já não existir)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS fornecedores (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        cnpj TEXT UNIQUE,
-        telefone TEXT,
-        email TEXT
-    )
-    ''')
-
     # Tabela de Movimentações
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS movimentacoes (
@@ -50,9 +48,10 @@ def criar_tabelas_estoque():
     )
     ''')
 
+    print("✅ Tabelas criadas com sucesso!")
     conn.commit()
     conn.close()
 
 
-# Chamar a função para criar as tabelas
-criar_tabelas_estoque()
+if __name__ == '__main__':
+    criar_tabelas()

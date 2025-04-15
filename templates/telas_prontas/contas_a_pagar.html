@@ -40,6 +40,24 @@
             padding: 24px;
         }
 
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            height: auto;
+            width: 180px;
+            margin-right: 20px;
+        }
+
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -153,7 +171,7 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1000px;
+            min-width: 1200px;
         }
 
         .data-table th {
@@ -220,7 +238,7 @@
             font-family: inherit;
         }
 
-        /* Modal de Edição em Massa */
+        /* Modal de Edição */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -246,7 +264,7 @@
             background: white;
             border-radius: 16px;
             width: 90%;
-            max-width: 600px;
+            max-width: 800px;
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: var(--shadow-md);
@@ -285,8 +303,15 @@
             padding: 24px;
         }
 
-        .form-group {
+        .form-row {
+            display: flex;
+            gap: 20px;
             margin-bottom: 16px;
+        }
+
+        .form-group {
+            flex: 1;
+            margin-bottom: 0;
         }
 
         .form-group label {
@@ -336,13 +361,21 @@
                 align-items: flex-start;
                 gap: 16px;
             }
+
+            .form-row {
+                flex-direction: column;
+                gap: 16px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="page-header">
-            <h1 class="page-title">CONTAS A PAGAR</h1>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="/static/logo_fisgar.png" alt="Logo FISGAR" class="logo">
+                <h1 class="page-title">CONTAS A PAGAR</h1>
+            </div>
             <div class="header-actions">
                 <button id="btn-edicao-massa" class="btn btn-accent" disabled>
                     <i class="bi bi-pencil-square"></i> Edição em Massa
@@ -399,10 +432,14 @@
                                 <th>Código</th>
                                 <th>Fornecedor</th>
                                 <th>Documento</th>
+                                <th>Emissão</th>
                                 <th>Vencimento</th>
                                 <th>Valor</th>
                                 <th>Valor Pago</th>
+                                <th>Data Pagamento</th>
                                 <th>Status</th>
+                                <th>Categoria</th>
+                                <th>Centro Custo</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -415,9 +452,11 @@
                                 <td>{{ conta['codigo'] }}</td>
                                 <td>{{ conta['fornecedor'] or '-' }}</td>
                                 <td>{{ conta['documento'] or '-' }}</td>
+                                <td>{{ conta['emissao'] or '-' }}</td>
                                 <td>{{ conta['vencimento'] }}</td>
                                 <td>{{ formatar_brl(conta['valor']) }}</td>
                                 <td>{{ formatar_brl(conta['valor_pago']) if conta['valor_pago'] else '-' }}</td>
+                                <td>{{ conta['data_pagamento'] or '-' }}</td>
                                 <td>
                                     <span class="badge badge-{{ conta['status'] }}">
                                         {% if conta['status'] == 'paid' %}Pago
@@ -425,6 +464,8 @@
                                         {% else %}Pendente{% endif %}
                                     </span>
                                 </td>
+                                <td>{{ conta['categoria'] or '-' }}</td>
+                                <td>{{ conta['centro_custo'] or '-' }}</td>
                                 <td>
                                     <div class="action-buttons">
                                         <button class="btn btn-outline btn-editar" data-codigo="{{ conta['codigo'] }}">
@@ -457,28 +498,59 @@
             <div class="modal-body">
                 <p id="modal-selected-count" style="font-weight: 500; margin-bottom: 20px;">0 lançamentos selecionados</p>
 
-                <div class="form-group">
-                    <label for="massa-status">Status</label>
-                    <select id="massa-status" class="form-control">
-                        <option value="">-- Manter status atual --</option>
-                        <option value="paid">Pago</option>
-                        <option value="pending">Pendente</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="massa-status">Status</label>
+                        <select id="massa-status" class="form-control">
+                            <option value="">-- Manter status atual --</option>
+                            <option value="paid">Pago</option>
+                            <option value="pending">Pendente</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="massa-categoria">Categoria</label>
+                        <select id="massa-categoria" class="form-control">
+                            <option value="">-- Manter categoria atual --</option>
+                            {% for categoria in categorias %}
+                            <option value="{{ categoria }}">{{ categoria }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="massa-vencimento">Data de Vencimento</label>
-                    <input type="date" id="massa-vencimento" class="form-control">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="massa-vencimento">Data de Vencimento</label>
+                        <input type="date" id="massa-vencimento" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="massa-data-pagamento">Data de Pagamento</label>
+                        <input type="date" id="massa-data-pagamento" class="form-control">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="massa-fornecedor">Fornecedor</label>
-                    <select id="massa-fornecedor" class="form-control">
-                        <option value="">-- Manter fornecedor atual --</option>
-                        {% for fornecedor in fornecedores %}
-                        <option value="{{ fornecedor }}">{{ fornecedor }}</option>
-                        {% endfor %}
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="massa-fornecedor">Fornecedor</label>
+                        <select id="massa-fornecedor" class="form-control">
+                            <option value="">-- Manter fornecedor atual --</option>
+                            {% for fornecedor in fornecedores %}
+                            <option value="{{ fornecedor }}">{{ fornecedor }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="massa-centro-custo">Centro de Custo</label>
+                        <select id="massa-centro-custo" class="form-control">
+                            <option value="">-- Manter centro de custo atual --</option>
+                            {% for centro in centros_custo %}
+                            <option value="{{ centro }}">{{ centro }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -494,6 +566,109 @@
         </div>
     </div>
 
+    <!-- Modal de Edição Individual -->
+    <div class="modal-overlay" id="modal-edicao-individual">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Editar Conta <span id="modal-codigo"></span></h3>
+                <button class="modal-close" id="btn-fechar-modal-individual">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form id="form-edicao-individual">
+                    <input type="hidden" id="individual-codigo" name="codigo">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="individual-fornecedor">Fornecedor</label>
+                            <select id="individual-fornecedor" name="fornecedor" class="form-control" required>
+                                {% for fornecedor in fornecedores %}
+                                <option value="{{ fornecedor }}">{{ fornecedor }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="individual-documento">Documento</label>
+                            <input type="text" id="individual-documento" name="documento" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="individual-emissao">Data de Emissão</label>
+                            <input type="date" id="individual-emissao" name="emissao" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="individual-vencimento">Data de Vencimento</label>
+                            <input type="date" id="individual-vencimento" name="vencimento" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="individual-valor">Valor</label>
+                            <input type="number" step="0.01" id="individual-valor" name="valor" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="individual-status">Status</label>
+                            <select id="individual-status" name="status" class="form-control" required>
+                                <option value="pending">Pendente</option>
+                                <option value="paid">Pago</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="individual-valor-pago">Valor Pago</label>
+                            <input type="number" step="0.01" id="individual-valor-pago" name="valor_pago" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="individual-data-pagamento">Data de Pagamento</label>
+                            <input type="date" id="individual-data-pagamento" name="data_pagamento" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="individual-categoria">Categoria</label>
+                            <select id="individual-categoria" name="categoria" class="form-control">
+                                <option value="">Selecione...</option>
+                                {% for categoria in categorias %}
+                                <option value="{{ categoria }}">{{ categoria }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="individual-centro-custo">Centro de Custo</label>
+                            <select id="individual-centro-custo" name="centro_custo" class="form-control">
+                                <option value="">Selecione...</option>
+                                {% for centro in centros_custo %}
+                                <option value="{{ centro }}">{{ centro }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="individual-observacoes">Observações</label>
+                        <textarea id="individual-observacoes" name="observacoes" class="form-control" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="btn-cancelar-individual">Cancelar</button>
+                <button class="btn btn-primary" id="btn-salvar-individual">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Elementos do DOM
@@ -502,12 +677,17 @@
             const filtroPeriodo = document.getElementById('filtro-periodo');
             const selectAllCheckbox = document.getElementById('select-all');
             const btnEdicaoMassa = document.getElementById('btn-edicao-massa');
-            const modal = document.getElementById('modal-edicao-massa');
-            const btnFecharModal = document.getElementById('btn-fechar-modal');
-            const btnCancelar = document.getElementById('btn-cancelar');
+            const modalMassa = document.getElementById('modal-edicao-massa');
+            const modalIndividual = document.getElementById('modal-edicao-individual');
+            const btnFecharModalMassa = document.getElementById('btn-fechar-modal');
+            const btnFecharModalIndividual = document.getElementById('btn-fechar-modal-individual');
+            const btnCancelarMassa = document.getElementById('btn-cancelar');
+            const btnCancelarIndividual = document.getElementById('btn-cancelar-individual');
             const btnAplicar = document.getElementById('btn-aplicar');
+            const btnSalvarIndividual = document.getElementById('btn-salvar-individual');
             const selectedCount = document.getElementById('modal-selected-count');
             const tabelaContas = document.getElementById('tabela-contas');
+            const modalCodigo = document.getElementById('modal-codigo');
 
             // Estado da aplicação
             let selectedCodigos = [];
@@ -525,10 +705,10 @@
 
                 linhas.forEach(linha => {
                     const celulas = linha.cells;
-                    const dataVencStr = celulas[4].textContent.trim();
+                    const dataVencStr = celulas[5].textContent.trim();
                     const dataVenc = dataVencStr ? parseDate(dataVencStr) : null;
-                    const statusLinha = celulas[7].querySelector('.badge').className.includes('paid') ? 'paid' :
-                                      celulas[7].querySelector('.badge').className.includes('overdue') ? 'overdue' : 'pending';
+                    const statusLinha = celulas[9].querySelector('.badge').className.includes('paid') ? 'paid' :
+                                      celulas[9].querySelector('.badge').className.includes('overdue') ? 'overdue' : 'pending';
                     const fornecedorLinha = celulas[2].textContent.trim();
 
                     let mostrar = true;
@@ -594,6 +774,16 @@
                 return new Date(year, month - 1, day);
             }
 
+            // Formatar data para YYYY-MM-DD (input type="date")
+            function formatDateForInput(date) {
+                if (!date) return '';
+                const d = new Date(date);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
             // Atualizar contagem de selecionados
             function updateSelectedCount() {
                 selectedCodigos = [];
@@ -640,34 +830,41 @@
             // Abrir modal de edição em massa
             btnEdicaoMassa.addEventListener('click', function() {
                 if (selectedCodigos.length > 0) {
-                    modal.classList.add('active');
+                    modalMassa.classList.add('active');
                 }
             });
 
-            // Fechar modal
-            function closeModal() {
+            // Fechar modais
+            function closeModal(modal) {
                 modal.classList.remove('active');
             }
 
-            btnFecharModal.addEventListener('click', closeModal);
-            btnCancelar.addEventListener('click', closeModal);
+            btnFecharModalMassa.addEventListener('click', () => closeModal(modalMassa));
+            btnCancelarMassa.addEventListener('click', () => closeModal(modalMassa));
+            btnFecharModalIndividual.addEventListener('click', () => closeModal(modalIndividual));
+            btnCancelarIndividual.addEventListener('click', () => closeModal(modalIndividual));
 
             // Fechar modal ao clicar fora
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    closeModal();
-                }
+            [modalMassa, modalIndividual].forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeModal(modal);
+                    }
+                });
             });
 
             // Aplicar alterações em massa
             btnAplicar.addEventListener('click', function() {
                 const status = document.getElementById('massa-status').value;
                 const vencimento = document.getElementById('massa-vencimento').value;
+                const dataPagamento = document.getElementById('massa-data-pagamento').value;
                 const fornecedor = document.getElementById('massa-fornecedor').value;
+                const categoria = document.getElementById('massa-categoria').value;
+                const centroCusto = document.getElementById('massa-centro-custo').value;
                 const comentario = document.getElementById('massa-comentario').value;
 
                 // Validar pelo menos um campo alterado
-                if (!status && !vencimento && !fornecedor && !comentario) {
+                if (!status && !vencimento && !dataPagamento && !fornecedor && !categoria && !centroCusto && !comentario) {
                     alert('Por favor, altere pelo menos um campo para aplicar as mudanças.');
                     return;
                 }
@@ -682,7 +879,10 @@
                         ids: selectedCodigos,
                         status: status || undefined,
                         vencimento: vencimento || undefined,
+                        data_pagamento: dataPagamento || undefined,
                         fornecedor: fornecedor || undefined,
+                        categoria: categoria || undefined,
+                        centro_custo: centroCusto || undefined,
                         comentario: comentario || undefined
                     })
                 })
@@ -705,7 +905,7 @@
                     alert('Erro ao conectar com o servidor');
                 });
 
-                closeModal();
+                closeModal(modalMassa);
             });
 
             // Event listeners para filtros
@@ -742,8 +942,73 @@
                 if (e.target.closest('.btn-editar')) {
                     const btn = e.target.closest('.btn-editar');
                     const codigo = btn.dataset.codigo;
-                    alert(`Editar conta ${codigo} - Implemente a lógica de edição individual`);
+                    const linha = btn.closest('tr');
+
+                    // Preencher modal com os dados da linha
+                    modalCodigo.textContent = codigo;
+                    document.getElementById('individual-codigo').value = codigo;
+                    document.getElementById('individual-fornecedor').value = linha.cells[2].textContent.trim();
+                    document.getElementById('individual-documento').value = linha.cells[3].textContent.trim();
+                    document.getElementById('individual-emissao').value = formatDateForInput(parseDate(linha.cells[4].textContent.trim()));
+                    document.getElementById('individual-vencimento').value = formatDateForInput(parseDate(linha.cells[5].textContent.trim()));
+
+                    // Extrair valor numérico (remover R$ e pontos)
+                    const valor = linha.cells[6].textContent.replace('R$', '').replace('.', '').replace(',', '.').trim();
+                    document.getElementById('individual-valor').value = valor;
+
+                    const valorPago = linha.cells[7].textContent === '-' ? '' :
+                                     linha.cells[7].textContent.replace('R$', '').replace('.', '').replace(',', '.').trim();
+                    document.getElementById('individual-valor-pago').value = valorPago;
+
+                    document.getElementById('individual-data-pagamento').value = formatDateForInput(parseDate(linha.cells[8].textContent.trim()));
+
+                    // Status
+                    const statusBadge = linha.cells[9].querySelector('.badge').className;
+                    const status = statusBadge.includes('paid') ? 'paid' :
+                                 statusBadge.includes('overdue') ? 'overdue' : 'pending';
+                    document.getElementById('individual-status').value = status;
+
+                    // Categoria e Centro de Custo
+                    document.getElementById('individual-categoria').value = linha.cells[10].textContent.trim();
+                    document.getElementById('individual-centro-custo').value = linha.cells[11].textContent.trim();
+
+                    // Abrir modal
+                    modalIndividual.classList.add('active');
                 }
+            });
+
+            // Salvar edição individual
+            btnSalvarIndividual.addEventListener('click', function() {
+                const form = document.getElementById('form-edicao-individual');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+
+                // Converter para JSON e enviar
+                fetch('/editar_individual', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro na requisição');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert('Conta atualizada com sucesso!');
+                        window.location.reload();
+                    } else {
+                        alert('Erro: ' + (data.error || 'Erro desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erro ao conectar com o servidor');
+                });
             });
 
             // Aplicar filtros ao carregar a página

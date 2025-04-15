@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edição da Nota Fiscal - {{ nfe.numero if nfe else '' }} | Fisgar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --primary: #0066ff;
+      --primary-light: rgba(0, 102, 255, 0.1);
+      --accent: #00ffaa;
+      --text: #2b2d42;
+      --bg: #f8faff;
+      --card-bg: #ffffff;
+      --success: #00c853;
+      --warning: #ffab00;
+      --danger: #ff3d00;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text);
+      padding: 2rem;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    h1 {
+      color: var(--primary);
+      font-size: 1.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nfe-info {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .nfe-info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nfe-info-label {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 0.25rem;
+    }
+
+    .nfe-info-value {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .upload-area {
+      background: var(--card-bg);
+      border: 2px dashed var(--primary-light);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    .upload-area:hover {
+      border-color: var(--primary);
+      background: rgba(0, 102, 255, 0.03);
+    }
+
+    .upload-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .upload-btn:hover {
+      background: #005ce6;
+      transform: translateY(-1px);
+    }
+
+    .product-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .product-card:hover {
+      box-shadow: 0 8px 24px rgba(0, 102, 255, 0.1);
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .input-group {
+      margin-bottom: 1rem;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: #555;
+    }
+
+    .input-field {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-field i {
+      position: absolute;
+      left: 12px;
+      color: #999;
+    }
+
+    .input-field input, .input-field select {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .input-field input:focus, .input-field select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+      outline: none;
+    }
+
+    .input-success {
+      background-color: rgba(0, 200, 83, 0.05);
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .input-warning {
+      background-color: rgba(255, 171, 0, 0.05);
+      border-color: var(--warning);
+    }
+
+    .input-error {
+      background-color: rgba(255, 61, 0, 0.05);
+      border-color: var(--danger);
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #005ce6;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--primary-light);
+    }
+
+    .unit-converter {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .unit-converter-btn {
+      background: var(--primary-light);
+      border: none;
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .unit-converter-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+
+      .product-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <i class="bi bi-file-earmark-text-fill"></i>
+        Edição de Nota Fiscal
+      </h1>
+      <form method="POST" enctype="multipart/form-data" id="uploadForm">
+        <label for="nfe_file" class="upload-btn">
+          <i class="bi bi-upload"></i>
+          Importar NF-e
+          <input type="file" id="nfe_file" name="nfe_file" accept=".xml" style="display: none;">
+        </label>
+      </form>
+    </header>
+
+    {% if nfe %}
+    <div class="nfe-info">
+      <div class="nfe-info-item">
+        <span class="nfe-info-label">Número</span>
+        <span class="nfe-info-value">{{ nfe.numero }}</span>
+      </div>
+      <div class="nfe-info-item">
+        <span class="nfe-info-label">Chave</span>
+        <span class="nfe-info-value">{{ nfe.chave }}</span>
+      </div>
+      <div class="nfe-info-item">
+        <span class="nfe-info-label">Data Emissão</span>
+        <span class="nfe-info-value">{{ nfe.data_emissao }}</span>
+      </div>
+      <div class="nfe-info-item">
+        <span class="nfe-info-label">Fornecedor</span>
+        <span class="nfe-info-value">{{ nfe.fornecedor.nome }} ({{ nfe.fornecedor.cnpj }})</span>
+      </div>
+    </div>
+    {% else %}
+    <div class="upload-area">
+      <i class="bi bi-file-earmark-arrow-up" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+      <h3 style="margin-bottom: 0.5rem;">Arraste ou selecione um arquivo XML</h3>
+      <p style="color: #666; margin-bottom: 1.5rem;">Formatos suportados: .xml</p>
+      <label for="nfe_file" class="upload-btn">
+        <i class="bi bi-upload"></i>
+        Selecionar Arquivo
+      </label>
+    </div>
+    {% endif %}
+
+    {% if produtos %}
+    <form method="POST" action="/compras/salvar-nfe" id="nfeForm">
+      {% for produto in produtos %}
+      <div class="product-card">
+        <h3 style="margin-bottom: 1rem; color: var(--primary);">{{ produto.descricao }}</h3>
+
+        <div class="product-grid">
+          <div class="input-group">
+            <label>Código</label>
+            <div class="input-field">
+              <i class="bi bi-upc-scan"></i>
+              <input type="text" value="{{ produto.codigo }}" readonly>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Unidade</label>
+            <div class="input-field">
+              <i class="bi bi-grid"></i>
+              <input type="text" id="unidade_{{ loop.index0 }}" value="{{ produto.unidade }}" readonly>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Quantidade</label>
+            <div class="input-field">
+              <i class="bi bi-hash"></i>
+              <input type="text" value="{{ produto.quantidade }}" readonly>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Valor Unitário (R$)</label>
+            <div class="input-field">
+              <i class="bi bi-currency-dollar"></i>
+              <input type="text"
+                     id="valor_unitario_{{ loop.index0 }}"
+                     name="valor_unitario_{{ loop.index0 }}"
+                     value="{{ "%.2f"|format(produto.valor_unitario) }}"
+                     oninput="formatarMoeda(this); calcular({{ loop.index0 }})"
+                     data-original-value="{{ produto.valor_unitario }}">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Tipo de Cálculo</label>
+            <div class="input-field">
+              <i class="bi bi-calculator"></i>
+              <select id="tipo_calculo_{{ loop.index0 }}"
+                      onchange="mudarTipoCalculo({{ loop.index0 }})"
+                      class="{{ 'input-error' if produto.qtd_embalagem == 0 or produto.qtd_unidade == 0 else '' }}">
+                <option value="embalagem" {{ 'selected' if produto.unidade in ['UN', 'CX', 'PC', 'DZ', 'FD'] else '' }}>
+                  Por Embalagem
+                </option>
+                <option value="peso" {{ 'selected' if produto.unidade in ['KG', 'G', 'MG', 'LT', 'ML'] else '' }}>
+                  Por Peso/Volume
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group" id="embalagem-group_{{ loop.index0 }}"
+               style="{{ 'display: none;' if produto.unidade in ['KG', 'G', 'MG', 'LT', 'ML'] else '' }}">
+            <label>Qtd. Embalagens</label>
+            <div class="input-field">
+              <i class="bi bi-box-seam"></i>
+              <input type="number"
+                     id="qtd_embalagem_{{ loop.index0 }}"
+                     name="qtd_embalagem_{{ loop.index0 }}"
+                     value="{{ produto.qtd_embalagem }}"
+                     class="{{ 'input-error' if produto.qtd_embalagem == 0 else '' }}"
+                     oninput="calcular({{ loop.index0 }})"
+                     step="1"
+                     min="0">
+            </div>
+          </div>
+
+          <div class="input-group" id="peso-group_{{ loop.index0 }}"
+               style="{{ 'display: block;' if produto.unidade in ['KG', 'G', 'MG', 'LT', 'ML'] else 'display: none;' }}">
+            <label>Peso/Volume Total</label>
+            <div class="input-field">
+              <i class="bi bi-boxes"></i>
+              <input type="number"
+                     id="peso_total_{{ loop.index0 }}"
+                     name="peso_total_{{ loop.index0 }}"
+                     value="{{ produto.peso_total if produto.peso_total else '' }}"
+                     class="{{ 'input-error' if produto.peso_total == 0 else '' }}"
+                     oninput="calcular({{ loop.index0 }})"
+                     step="0.001"
+                     min="0">
+              <span style="position: absolute; right: 10px; color: #666;">
+                {{ produto.unidade }}
+              </span>
+            </div>
+            <div class="unit-converter">
+              <button type="button" class="unit-converter-btn" onclick="converterUnidade({{ loop.index0 }}, 'g')">Gramas</button>
+              <button type="button" class="unit-converter-btn" onclick="converterUnidade({{ loop.index0 }}, 'kg')">Quilos</button>
+              {% if produto.unidade in ['LT', 'ML'] %}
+              <button type="button" class="unit-converter-btn" onclick="converterUnidade({{ loop.index0 }}, 'ml')">ML</button>
+              <button type="button" class="unit-converter-btn" onclick="converterUnidade({{ loop.index0 }}, 'lt')">Litros</button>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="input-group" id="unidade-group_{{ loop.index0 }}"
+               style="{{ 'display: none;' if produto.unidade in ['KG', 'G', 'MG', 'LT', 'ML'] else '' }}">
+            <label>Qtd. por Embalagem</label>
+            <div class="input-field">
+              <i class="bi bi-boxes"></i>
+              <input type="number"
+                     id="qtd_por_unidade_{{ loop.index0 }}"
+                     name="qtd_por_unidade_{{ loop.index0 }}"
+                     value="{{ produto.qtd_unidade }}"
+                     class="{{ 'input-error' if produto.qtd_unidade == 0 else '' }}"
+                     oninput="calcular({{ loop.index0 }})"
+                     step="1"
+                     min="0">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>IPI (%)</label>
+            <div class="input-field">
+              <i class="bi bi-percent"></i>
+              <input type="text" value="{{ "%.2f"|format(produto.ipi) }}" readonly>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Custo Unitário Real (R$)</label>
+            <div class="input-field">
+              <i class="bi bi-calculator"></i>
+              <input type="text"
+                     id="custo_unitario_{{ loop.index0 }}"
+                     name="custo_unitario_{{ loop.index0 }}"
+                     value="{{ "%.4f"|format(produto.custo_unit_real) if produto.custo_unit_real > 0 else '' }}"
+                     class="input-success"
+                     readonly>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="actions">
+        <button type="button" class="btn btn-outline" onclick="window.history.back()">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-circle"></i> Salvar Alterações
+        </button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+
+  <script>
+    // Ativa o upload quando selecionar um arquivo
+    document.getElementById('nfe_file').addEventListener('change', function() {
+      document.getElementById('uploadForm').submit();
+    });
+
+    // Permite arrastar e soltar arquivos
+    const uploadArea = document.querySelector('.upload-area');
+    if (uploadArea) {
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--primary)';
+        uploadArea.style.backgroundColor = 'rgba(0, 102, 255, 0.05)';
+      });
+
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.borderColor = 'var(--primary-light)';
+        uploadArea.style.backgroundColor = 'var(--card-bg)';
+      });
+
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--primary-light)';
+        uploadArea.style.backgroundColor = 'var(--card-bg)';
+
+        if (e.dataTransfer.files.length) {
+          document.getElementById('nfe_file').files = e.dataTransfer.files;
+          document.getElementById('uploadForm').submit();
+        }
+      });
+    }
+
+    // Formatar valor monetário
+    function formatarMoeda(input) {
+      // Remove tudo que não é número ou vírgula
+      let valor = input.value.replace(/[^\d,]/g, '');
+
+      // Garante que há apenas uma vírgula
+      const partes = valor.split(',');
+      if (partes.length > 2) {
+        valor = partes[0] + ',' + partes.slice(1).join('');
+      }
+
+      // Formata para 2 casas decimais
+      if (partes.length === 2) {
+        valor = partes[0] + ',' + partes[1].slice(0, 2);
+      }
+
+      input.value = valor;
+    }
+
+    // Converter entre unidades de peso/volume
+    function converterUnidade(index, paraUnidade) {
+      const pesoInput = document.getElementById(`peso_total_${index}`);
+      let valorAtual = parseFloat(pesoInput.value) || 0;
+      const unidadeAtual = document.getElementById(`unidade_${index}`).value.toLowerCase();
+
+      // Conversões para gramas
+      if (paraUnidade === 'g') {
+        if (unidadeAtual === 'kg') valorAtual *= 1000;
+        if (unidadeAtual === 'mg') valorAtual /= 1000;
+        document.getElementById(`unidade_${index}`).value = 'G';
+      }
+      // Conversões para quilos
+      else if (paraUnidade === 'kg') {
+        if (unidadeAtual === 'g') valorAtual /= 1000;
+        if (unidadeAtual === 'mg') valorAtual /= 1000000;
+        document.getElementById(`unidade_${index}`).value = 'KG';
+      }
+      // Conversões para mililitros
+      else if (paraUnidade === 'ml') {
+        if (unidadeAtual === 'lt') valorAtual *= 1000;
+        document.getElementById(`unidade_${index}`).value = 'ML';
+      }
+      // Conversões para litros
+      else if (paraUnidade === 'lt') {
+        if (unidadeAtual === 'ml') valorAtual /= 1000;
+        document.getElementById(`unidade_${index}`).value = 'LT';
+      }
+
+      pesoInput.value = valorAtual.toFixed(3);
+      calcular(index);
+    }
+
+    // Mudar tipo de cálculo (embalagem/peso)
+    function mudarTipoCalculo(index) {
+      const tipoCalculo = document.getElementById(`tipo_calculo_${index}`).value;
+
+      if (tipoCalculo === 'embalagem') {
+        document.getElementById(`embalagem-group_${index}`).style.display = 'block';
+        document.getElementById(`unidade-group_${index}`).style.display = 'block';
+        document.getElementById(`peso-group_${index}`).style.display = 'none';
+      } else {
+        document.getElementById(`embalagem-group_${index}`).style.display = 'none';
+        document.getElementById(`unidade-group_${index}`).style.display = 'none';
+        document.getElementById(`peso-group_${index}`).style.display = 'block';
+      }
+
+      calcular(index);
+    }
+
+    // Função principal de cálculo do custo unitário
+    function calcular(index) {
+      // Obter valor unitário e converter para float
+      const valorUnitStr = document.getElementById(`valor_unitario_${index}`).value.replace(',', '.');
+      const valorUnit = parseFloat(valorUnitStr) || 0;
+
+      // Obter tipo de cálculo selecionado
+      const tipoCalculo = document.getElementById(`tipo_calculo_${index}`).value;
+      let custo = 0;
+
+      if (tipoCalculo === 'embalagem') {
+        // Cálculo por embalagem
+        const qtdEmbalagem = parseFloat(document.getElementById(`qtd_embalagem_${index}`).value) || 0;
+        const qtdPorUnidade = parseFloat(document.getElementById(`qtd_por_unidade_${index}`).value) || 0;
+
+        if (qtdEmbalagem > 0 && qtdPorUnidade > 0) {
+          custo = valorUnit / (qtdEmbalagem * qtdPorUnidade);
+        }
+
+        // Validação dos campos
+        document.getElementById(`qtd_embalagem_${index}`).className = qtdEmbalagem > 0 ? '' : 'input-error';
+        document.getElementById(`qtd_por_unidade_${index}`).className = qtdPorUnidade > 0 ? '' : 'input-error';
+      } else {
+        // Cálculo por peso/volume
+        const pesoTotal = parseFloat(document.getElementById(`peso_total_${index}`).value) || 0;
+        const unidade = document.getElementById(`unidade_${index}`).value;
+        let pesoEmKg = pesoTotal;
+
+        // Converter para kg para cálculo uniforme
+        if (unidade === 'G') pesoEmKg = pesoTotal / 1000;
+        if (unidade === 'MG') pesoEmKg = pesoTotal / 1000000;
+        if (unidade === 'ML') pesoEmKg = pesoTotal / 1000; // Considerando densidade 1g/ml
+
+        if (pesoTotal > 0) {
+          custo = valorUnit / pesoEmKg;
+        }
+
+        // Validação do campo
+        document.getElementById(`peso_total_${index}`).className = pesoTotal > 0 ? '' : 'input-error';
+      }
+
+      // Atualizar campo de custo unitário
+      const custoInput = document.getElementById(`custo_unitario_${index}`);
+      custoInput.value = custo > 0 ? custo.toFixed(4).replace('.', ',') : '';
+
+      // Validar se todos os campos necessários estão preenchidos
+      validarFormulario();
+    }
+
+    // Validar todo o formulário antes de enviar
+    function validarFormulario() {
+      const form = document.getElementById('nfeForm');
+      if (!form) return;
+
+      let formularioValido = true;
+      const produtos = document.querySelectorAll('.product-card');
+
+      produtos.forEach((produto, index) => {
+        const tipoCalculo = document.getElementById(`tipo_calculo_${index}`).value;
+        let camposValidos = true;
+
+        if (tipoCalculo === 'embalagem') {
+          const qtdEmbalagem = parseFloat(document.getElementById(`qtd_embalagem_${index}`).value) || 0;
+          const qtdPorUnidade = parseFloat(document.getElementById(`qtd_por_unidade_${index}`).value) || 0;
+
+          if (qtdEmbalagem <= 0 || qtdPorUnidade <= 0) {
+            camposValidos = false;
+          }
+        } else {
+          const pesoTotal = parseFloat(document.getElementById(`peso_total_${index}`).value) || 0;
+          if (pesoTotal <= 0) {
+            camposValidos = false;
+          }
+        }
+
+        if (!camposValidos) {
+          formularioValido = false;
+        }
+      });
+
+      // Desabilitar/enviar botão conforme validação
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = !formularioValido;
+    }
+
+    // Inicializar cálculos e validações ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+      if (document.querySelector('.product-card')) {
+        const produtos = document.querySelectorAll('.product-card');
+        produtos.forEach((produto, index) => {
+          calcular(index);
+        });
+        validarFormulario();
+      }
+    });
+  </script>
+</body>
+</html>
