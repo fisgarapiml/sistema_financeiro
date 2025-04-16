@@ -1,9 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, jsonify, send_from_directory, request
 from datetime import datetime, date
 from routes.compras import compras_bp
+from pathlib import Path
 import sqlite3
 import json
+import shutil
 import os
+import time
+import xml.etree.ElementTree as ET
+from threading import Thread
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -78,6 +84,73 @@ def contas_a_pagar():
     finally:
         conn.close()
 
+
+# Caminho da pasta onde os arquivos XML serão armazenados
+compras_xml = 'c:/sistema_financeiro/compras_xml'
+
+def processar_xml(caminho_arquivo):
+    """
+    Processa um arquivo XML de NF-e e extrai informações relevantes.
+    """
+    try:
+        tree = ET.parse(caminho_arquivo)
+        root = tree.getroot()
+        ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}  # Namespace para NF-e
+
+        ide = root.find('./nfe:NFe/nfe:infNFe/nfe:ide', ns)
+        emit = root.find('./nfe:NFe/nfe:infNFe/nfe:emit', ns)
+        total = root.find('./nfe:NFe/nfe:infNFe/nfe:total/nfe:ICMSTot', ns)
+
+        numero_nfe = ide.find('nfe:nNF', ns).text if ide is not None and ide.find('nfe:nNF', ns) is not None else 'N/A'
+        nome_fornecedor = emit.find('nfe:xNome', ns).text if emit is not None and emit.find('nfe:xNome', ns) is not None else 'N/A'
+        data_emissao = ide.find('nfe:dhEmi', ns).text[:10] if ide is not None and ide.find('nfe:dhEmi', ns) is not None else 'N/A'
+        valor_total = total.find('nfe:vNF', ns).text if total is not None and total.find('nfe:vNF', ns) is not None else 'N/A'
+        detalhes_produto = root.find('./nfe:NFe/nfe:infNFe/nfe:det', ns)
+        valor_unitario_pacote = detalhes_produto.find('./nfe:prod/nfe:vUnComerc',
+        ns).text if detalhes_produto is not None and detalhes_produto.find(
+        './nfe:prod/nfe:vUnComerc', ns) is not None else 'N/A'
+        # Podemos adicionar mais informações que você precisa aqui
+
+        return {
+            'numero_nfe': numero_nfe,
+            'nome_fornecedor': nome_fornecedor,
+            'data_emissao': data_emissao,
+            'valor_total': valor_total,
+            'valor_unitario_pacote': valor_unitario_pacote
+        }
+    except FileNotFoundError:
+        print(f"Arquivo não encontrado: {caminho_arquivo}")
+        return None
+    except ET.ParseError:
+        print(f"Erro ao analisar o XML: {caminho_arquivo}")
+        return None
+
+def listar_nfe():
+    """
+    Lista os arquivos XML na pasta especificada e processa cada um.
+    """
+    nfe_data = []
+    try:
+        for nome_arquivo in os.listdir(compras_xml):
+            if nome_arquivo.endswith('.xml'):
+                caminho_arquivo = os.path.join(compras_xml, nome_arquivo)
+                dados_nfe = processar_xml(caminho_arquivo)
+                if dados_nfe:
+                    nfe_data.append(dados_nfe)
+    except FileNotFoundError:
+        print(f"Pasta não encontrada: {compras_xml}")
+    return nfe_data
+
+@app.route('/nfe_dashboard')
+def dashboard():
+    """
+    Rota para exibir o dashboard com as informações das NF-e.
+    """
+    nfe_processadas = listar_nfe()
+    total_nfe = len(nfe_processadas)
+    valor_total_nfe_mes = sum(float(nfe['valor_total']) for nfe in nfe_processadas if nfe['valor_total'] != 'N/A')
+
+    return render_template('nfe_dashboard.html', total_nfe=total_nfe, valor_total_nfe_mes=valor_total_nfe_mes, nfe_processadas=nfe_processadas)
 
 @app.route("/indicadores")
 def indicadores():

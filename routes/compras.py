@@ -99,12 +99,12 @@ def edicao_nfe():
         # Processar upload de arquivo
         if 'nfe_file' not in request.files:
             flash('Nenhum arquivo selecionado', 'error')
-            return render_template("compras/edicao_nfe.html")
+            return render_template("compras/nfe_dashboard.html")
 
         file = request.files['nfe_file']
         if file.filename == '':
             flash('Nenhum arquivo selecionado', 'error')
-            return render_template("compras/edicao_nfe.html")
+            return render_template("compras/nfe_dashboard.html")
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
@@ -114,9 +114,9 @@ def edicao_nfe():
 
             try:
                 data = parse_xml(filepath)
-                return render_template("compras/edicao_nfe.html", **data)
+                return render_template("compras/nfe_dashboard.html", **data)
             except ValueError as e:
                 flash(str(e), 'error')
 
     # GET ou falha no POST
-    return render_template("compras/edicao_nfe.html")
+    return render_template("compras/nfe_dashboard.html")

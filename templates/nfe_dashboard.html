@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NF-e Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #0066ff;
+            --primary-light: rgba(0, 102, 255, 0.1);
+            --accent: #00ffaa;
+            --text: #2b2d42;
+            --bg: #f8faff;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-shadow: 0 4px 20px rgba(0, 102, 255, 0.08);
+            --status-paid: #00c853;
+            --status-pending: #ffab00;
+            --status-overdue: #ff3d00;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 25px; /* Padding padrão para seções */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .principal-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.15);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .card-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0;
+        }
+
+        .nfe-list-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .nfe-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .nfe-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            border-left: 5px solid var(--primary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nfe-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(0, 102, 255, 0.1);
+        }
+
+        .nfe-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .nfe-card p {
+            font-size: 0.875rem;
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+
+        /* Estilo para o modal (opcional para agora) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: var(--text);
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="page-title">NF-e Dashboard</h1>
+        </div>
+
+        <div class="principal-cards">
+            <div class="card">
+                <h2 class="card-title">Total de NF-e Processadas</h2>
+                <p class="card-value">{{ total_nfe }}</p>
+            </div>
+            <div class="card">
+                <h2 class="card-title">Valor Total das NF-e (Mês)</h2>
+                <p class="card-value">R$ {{ '%.2f'|format(valor_total_nfe_mes) }}</p>
+            </div>
+            </div>
+
+        <h2 class="nfe-list-title">NF-e Processadas</h2>
+        <div class="nfe-list">
+            {% for nfe in nfe_processadas %}
+            <div class="nfe-card"
+     onclick="abrirModal('{{ nfe.numero_nfe }}')"
+     data-numero="{{ nfe.numero_nfe }}"
+     data-fornecedor="{{ nfe.nome_fornecedor }}"
+     data-emissao="{{ nfe.data_emissao }}"
+     data-valor="{{ nfe.valor_total }}"
+     data-valor-pacote="{{ nfe.valor_unitario_pacote }}">
+    <h3>NF-e: {{ nfe.numero_nfe }}</h3>
+    <p><strong>Fornecedor:</strong> {{ nfe.nome_fornecedor }}</p>
+    <p><strong>Data Emissão:</strong> {{ nfe.data_emissao }}</p>
+    <p><strong>Valor Total:</strong> R$ {{ nfe.valor_total }}</p>
+</div>
+            {% else %}
+            <p class="body-text">Nenhuma NF-e encontrada na pasta.</p>
+            {% endfor %}
+        </div>
+
+        <div id="modal-nfe" class="modal">
+            <div class="modal-content">
+                <span class="close-button" onclick="fecharModal()">&times;</span>
+                <h2 id="modal-titulo" class="section-title">Detalhes da NF-e</h2>
+                <div id="modal-body" class="body-text">
+                    <p><strong>Número:</strong> <span id="modal-numero"></span></p>
+<p><strong>Fornecedor:</strong> <span id="modal-fornecedor"></span></p>
+<p><strong>Data de Emissão:</strong> <span id="modal-emissao"></span></p>
+<p><strong>Valor Total:</strong> R$ <span id="modal-valor"></span></p>
+<p><strong>Valor Unitário do Pacote:</strong> R$ <span id="modal-valor-pacote"></span></p>
+
+<div class="form-group">
+    <label for="quantidade-pacote" class="form-label">Quantidade por Pacote:</label>
+    <input type="number" id="quantidade-pacote" class="form-input" min="1">
+</div>
+
+<div class="form-group">
+    <label for="preco-unitario-item" class="form-label">Preço Unitário por Item:</label>
+    <input type="text" id="preco-unitario-item" class="form-input" value="Calculando..." readonly>
+</div>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function abrirModal(numero_nfe) {
+    const card = Array.from(document.querySelectorAll('.nfe-card')).find(c => c.dataset.numero === numero_nfe);
+
+    if (card) {
+        const fornecedor = card.dataset.fornecedor;
+        const emissao = card.dataset.emissao;
+        const valor = card.dataset.valor;
+        const valorPacote = card.dataset.valorPacote;
+
+        document.getElementById('modal-titulo').innerText = `Detalhes da NF-e: ${numero_nfe}`;
+        document.getElementById('modal-numero').innerText = numero_nfe;
+        document.getElementById('modal-fornecedor').innerText = fornecedor;
+        document.getElementById('modal-emissao').innerText = emissao;
+        document.getElementById('modal-valor').innerText = valor;
+        document.getElementById('modal-valor-pacote').innerText = valorPacote;
+
+        const quantidadePacoteInput = document.getElementById('quantidade-pacote');
+        const precoUnitarioItemInput = document.getElementById('preco-unitario-item');
+
+        quantidadePacoteInput.value = ''; // Limpa o campo ao abrir o modal
+        precoUnitarioItemInput.value = 'Calculando...';
+
+        quantidadePacoteInput.addEventListener('input', function() {
+            const quantidade = parseInt(this.value);
+            if (quantidade > 0 && valorPacote !== 'N/A') {
+                const precoUnitario = parseFloat(valorPacote) / quantidade;
+                precoUnitarioItemInput.value = precoUnitario.toFixed(4); // Formata com 4 casas decimais
+            } else {
+                precoUnitarioItemInput.value = 'Calculando...';
+            }
+        });
+
+        document.getElementById('modal-nfe').style.display = "block";
+    }
+}
+
+function fecharModal() {
+    document.getElementById('modal-nfe').style.display = "none";
+}
+
+window.onclick = function(event) {
+    if (event.target == document.getElementById('modal-nfe')) {
+        document.getElementById('modal-nfe').style.display = "none";
+    }
+}
+    </script>
+</body>
+</html>
